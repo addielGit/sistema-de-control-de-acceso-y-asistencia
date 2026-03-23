@@ -83,7 +83,7 @@ export function DataTable<T extends Record<string, any>>({
               { icon: ChevronsRight, action: () => onPageChange(totalPages), disabled: page === totalPages },
             ].map(({ icon: Icon, action, disabled }, i) => (
               <button key={i} onClick={action} disabled={disabled}
-                className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-700 text-gray-400 hover:text-white hover:border-gray-600 disabled:opacity-30 disabled:cursor-not-allowed">
+                className="flex items-center justify-center text-gray-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed p-1">
                 <Icon className="w-3.5 h-3.5" />
               </button>
             ))}

@@ -124,7 +124,7 @@ export function AdminDashboard() {
         <div className="space-y-3">
           {stats.recentActivity.slice(0, 8).map((log: any) => (
             <div key={log.id} className="flex items-center gap-4 p-3 rounded-xl bg-gray-900/50 hover:bg-gray-900 transition-colors">
-              <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold ${log.action === 'ENTRY' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-orange-500/20 text-orange-400'}`}>
+              <div className={`flex items-center justify-center text-xs font-bold ${log.action === 'ENTRY' ? 'text-emerald-400' : 'text-orange-400'}`}>
                 {log.action === 'ENTRY' ? '→' : '←'}
               </div>
               <div className="flex-1 min-w-0">

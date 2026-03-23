@@ -38,7 +38,7 @@ export function QRCodeWidget({ userId, userName }: QRCodeWidgetProps) {
   return (
     <div className="glass rounded-2xl p-6 space-y-5">
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-violet-500/20 border border-violet-500/30 flex items-center justify-center">
+        <div>
           <QrCode className="w-5 h-5 text-violet-400" />
         </div>
         <div>
