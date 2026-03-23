@@ -73,8 +73,10 @@ export function Sidebar({ role }: SidebarProps) {
     useAppStore();
   const isAdmin = role === "ADMIN";
   const items = navItems.filter((i) => !i.adminOnly || isAdmin);
+  const isDesktop = () =>
+    typeof window !== "undefined" && window.innerWidth >= 1024;
 
-  // Inicializa según tamaño de pantalla (solo primera vez)
+  // Inicializa abierto en desktop, cerrado en móvil
   useEffect(() => {
     initSidebar();
     const handleResize = () => {
@@ -85,14 +87,12 @@ export function Sidebar({ role }: SidebarProps) {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // En móvil: cierra al navegar
+  // En móvil cierra al navegar
   useEffect(() => {
-    if (typeof window !== "undefined" && window.innerWidth < 1024) {
-      setSidebarOpen(false);
-    }
+    if (!isDesktop()) setSidebarOpen(false);
   }, [pathname]);
 
-  // Cierra con Escape
+  // Escape cierra
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape") setSidebarOpen(false);
@@ -113,12 +113,16 @@ export function Sidebar({ role }: SidebarProps) {
 
       <aside
         className={cn(
-          "fixed top-0 left-0 h-full z-40 flex flex-col bg-gray-900 border-r border-gray-800",
+          "flex flex-col bg-gray-900 border-r border-gray-800 shrink-0",
           "transition-all duration-300 ease-in-out",
-          "lg:relative lg:z-auto lg:translate-x-0",
+          // Móvil: fixed overlay, no ocupa espacio en el flujo
+          "fixed top-0 left-0 h-full z-40",
+          "lg:relative lg:z-auto lg:h-screen",
+          // Ancho: en desktop alterna 256px / 64px (empuja el contenido)
+          // En móvil: siempre 256px pero fuera de pantalla si cerrado
           sidebarOpen
             ? "w-64 translate-x-0"
-            : "w-64 -translate-x-full lg:-translate-x-0 lg:w-16",
+            : "w-64 -translate-x-full lg:w-16 lg:translate-x-0",
         )}
       >
         {/* Logo */}
@@ -129,8 +133,9 @@ export function Sidebar({ role }: SidebarProps) {
             </div>
             <span
               className={cn(
-                "font-bold text-white text-lg truncate gradient-text transition-all duration-200",
-                !sidebarOpen && "lg:opacity-0 lg:w-0 lg:overflow-hidden",
+                "font-bold text-white text-lg gradient-text whitespace-nowrap",
+                "transition-all duration-300 overflow-hidden",
+                sidebarOpen ? "w-auto opacity-100" : "w-0 opacity-0 lg:hidden",
               )}
             >
               AccessFlow
@@ -141,7 +146,7 @@ export function Sidebar({ role }: SidebarProps) {
         {/* Botón colapsar — solo desktop */}
         <button
           onClick={toggleSidebar}
-          className="hidden lg:flex absolute -right-3 top-20 w-6 h-6 bg-gray-800 border border-gray-700 rounded-full items-center justify-center hover:bg-gray-700 z-10"
+          className="hidden lg:flex absolute -right-3 top-20 w-6 h-6 bg-gray-800 border border-gray-700 rounded-full items-center justify-center hover:bg-gray-700 z-10 shrink-0"
         >
           <ChevronLeft
             className={cn(
@@ -152,7 +157,7 @@ export function Sidebar({ role }: SidebarProps) {
         </button>
 
         {/* Nav */}
-        <nav className="flex-1 py-4 px-2 space-y-1 overflow-y-auto">
+        <nav className="flex-1 py-4 px-2 space-y-1 overflow-y-auto overflow-x-hidden">
           {items.map(({ href, label, icon: Icon }) => {
             const isActive =
               pathname === href ||
@@ -161,8 +166,10 @@ export function Sidebar({ role }: SidebarProps) {
               <Link
                 key={href}
                 href={href}
+                title={!sidebarOpen ? label : undefined}
                 className={cn(
                   "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all group",
+                  "whitespace-nowrap overflow-hidden",
                   isActive
                     ? "bg-blue-600/20 text-blue-400 border border-blue-500/20"
                     : "text-gray-400 hover:text-white hover:bg-gray-800",
@@ -178,8 +185,10 @@ export function Sidebar({ role }: SidebarProps) {
                 />
                 <span
                   className={cn(
-                    "truncate transition-all duration-200",
-                    !sidebarOpen && "lg:opacity-0 lg:w-0 lg:overflow-hidden",
+                    "transition-all duration-300 overflow-hidden",
+                    sidebarOpen
+                      ? "opacity-100 max-w-xs"
+                      : "opacity-0 max-w-0 lg:hidden",
                   )}
                 >
                   {label}
@@ -193,13 +202,16 @@ export function Sidebar({ role }: SidebarProps) {
         <div className="p-2 border-t border-gray-800 shrink-0">
           <button
             onClick={() => signOut({ callbackUrl: "/login" })}
-            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-400 hover:text-red-400 hover:bg-red-500/10 w-full transition-all group"
+            title={!sidebarOpen ? "Cerrar sesión" : undefined}
+            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-400 hover:text-red-400 hover:bg-red-500/10 w-full transition-all group overflow-hidden"
           >
             <LogOut className="w-5 h-5 shrink-0 group-hover:text-red-400" />
             <span
               className={cn(
-                "transition-all duration-200",
-                !sidebarOpen && "lg:opacity-0 lg:w-0 lg:overflow-hidden",
+                "transition-all duration-300 overflow-hidden whitespace-nowrap",
+                sidebarOpen
+                  ? "opacity-100 max-w-xs"
+                  : "opacity-0 max-w-0 lg:hidden",
               )}
             >
               Cerrar Sesión

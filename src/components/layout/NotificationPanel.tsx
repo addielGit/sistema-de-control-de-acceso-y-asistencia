@@ -1,6 +1,7 @@
 // src/components/layout/NotificationPanel.tsx
 "use client";
 import { useEffect, useRef, useState, useCallback } from "react";
+import { createPortal } from "react-dom";
 import {
   Bell,
   X,
@@ -59,7 +60,50 @@ export function NotificationPanel() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [acting, setActing] = useState<string | null>(null);
-  const panelRef = useRef<HTMLDivElement>(null);
+  const [panelStyle, setPanelStyle] = useState<React.CSSProperties>({});
+  const [mounted, setMounted] = useState(false);
+  const bellRef = useRef<HTMLButtonElement>(null);
+
+  // Solo renderizar el portal en el cliente
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Calcular posición del panel relativa al botón campana
+  const updatePosition = useCallback(() => {
+    if (!bellRef.current) return;
+    const rect = bellRef.current.getBoundingClientRect();
+    const panelWidth = 360;
+    const windowWidth = window.innerWidth;
+
+    // Posición base: alineado a la derecha del botón
+    let left = rect.right - panelWidth;
+    // Si se saldría por la izquierda, anclar al margen
+    if (left < 8) left = 8;
+    // Si se saldría por la derecha, anclar al margen derecho
+    if (left + panelWidth > windowWidth - 8)
+      left = windowWidth - panelWidth - 8;
+
+    setPanelStyle({
+      position: "fixed",
+      top: rect.bottom + 8,
+      left,
+      width: Math.min(panelWidth, windowWidth - 16),
+      zIndex: 99999,
+    });
+  }, []);
+
+  useEffect(() => {
+    if (open) {
+      updatePosition();
+      window.addEventListener("resize", updatePosition);
+      window.addEventListener("scroll", updatePosition, true);
+    }
+    return () => {
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition, true);
+    };
+  }, [open, updatePosition]);
 
   // Fetch notificaciones
   const fetchNotifications = useCallback(async (silent = false) => {
@@ -83,14 +127,18 @@ export function NotificationPanel() {
 
   // Cerrar al hacer click fuera
   useEffect(() => {
+    if (!open) return;
     const handler = (e: MouseEvent) => {
-      if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
+      const target = e.target as Node;
+      // Ignorar clicks en el botón campana (lo maneja su propio onClick)
+      if (bellRef.current?.contains(target)) return;
+      // Cerrar si click fuera del panel (el panel está en el portal)
+      const panel = document.getElementById("notification-panel-portal");
+      if (panel && !panel.contains(target)) setOpen(false);
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
-  }, []);
+  }, [open]);
 
   // Cerrar con Escape
   useEffect(() => {
@@ -142,17 +190,130 @@ export function NotificationPanel() {
   };
 
   const handleBellClick = () => {
-    setOpen((o) => !o);
-    if (!open) fetchNotifications();
+    const next = !open;
+    setOpen(next);
+    if (next) fetchNotifications();
   };
 
-  const readNotifications = notifications.filter((n) => n.isRead);
   const unreadNotifications = notifications.filter((n) => !n.isRead);
+  const readNotifications = notifications.filter((n) => n.isRead);
+
+  // Panel content (renderizado via portal)
+  const panelContent = (
+    <div
+      id="notification-panel-portal"
+      style={panelStyle}
+      className={cn(
+        "flex flex-col max-h-[520px]",
+        "bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl shadow-black/60",
+      )}
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-800 shrink-0">
+        <div className="flex items-center gap-2">
+          <h3 className="text-sm font-semibold text-white">Notificaciones</h3>
+          {unreadCount > 0 && (
+            <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/20 text-blue-400 border border-blue-500/30">
+              {unreadCount} nuevas
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-1">
+          {unreadCount > 0 && (
+            <button
+              onClick={markAllRead}
+              disabled={acting === "all"}
+              title="Marcar todas como leídas"
+              className="w-7 h-7 rounded-lg hover:bg-gray-700 flex items-center justify-center text-gray-400 hover:text-white transition-all"
+            >
+              {acting === "all" ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <CheckCheck className="w-3.5 h-3.5" />
+              )}
+            </button>
+          )}
+          {readNotifications.length > 0 && (
+            <button
+              onClick={clearRead}
+              disabled={acting === "clear"}
+              title="Eliminar leídas"
+              className="w-7 h-7 rounded-lg hover:bg-gray-700 flex items-center justify-center text-gray-400 hover:text-red-400 transition-all"
+            >
+              {acting === "clear" ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Trash2 className="w-3.5 h-3.5" />
+              )}
+            </button>
+          )}
+          <button
+            onClick={() => setOpen(false)}
+            className="w-7 h-7 rounded-lg hover:bg-gray-700 flex items-center justify-center text-gray-400 hover:text-white transition-all"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </div>
+
+      {/* Lista */}
+      <div className="overflow-y-auto flex-1 overscroll-contain">
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="w-5 h-5 animate-spin text-blue-400" />
+          </div>
+        ) : notifications.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 gap-3">
+            <div className="w-12 h-12 rounded-2xl bg-gray-800 flex items-center justify-center">
+              <Bell className="w-5 h-5 text-gray-600" />
+            </div>
+            <p className="text-sm text-gray-500">Sin notificaciones</p>
+          </div>
+        ) : (
+          <div className="py-2">
+            {unreadNotifications.length > 0 && (
+              <>
+                <p className="px-4 py-1.5 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">
+                  Nuevas
+                </p>
+                {unreadNotifications.map((n) => (
+                  <NotifItem
+                    key={n.id}
+                    notif={n}
+                    onRead={markRead}
+                    onDelete={deleteNotif}
+                    acting={acting}
+                  />
+                ))}
+              </>
+            )}
+            {readNotifications.length > 0 && (
+              <>
+                <p className="px-4 py-1.5 text-[10px] font-semibold text-gray-500 uppercase tracking-wider mt-1">
+                  Anteriores
+                </p>
+                {readNotifications.map((n) => (
+                  <NotifItem
+                    key={n.id}
+                    notif={n}
+                    onRead={markRead}
+                    onDelete={deleteNotif}
+                    acting={acting}
+                  />
+                ))}
+              </>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
 
   return (
-    <div className="relative" ref={panelRef}>
+    <>
       {/* Botón campana */}
       <button
+        ref={bellRef}
         onClick={handleBellClick}
         className={cn(
           "relative w-9 h-9 rounded-lg border flex items-center justify-center transition-all",
@@ -163,137 +324,19 @@ export function NotificationPanel() {
       >
         <Bell className="w-4 h-4" />
         {unreadCount > 0 && (
-          <span
-            className={cn(
-              "absolute -top-1 -right-1 min-w-[16px] h-4 px-1 flex items-center justify-center",
-              "rounded-full text-[10px] font-bold bg-blue-500 text-white leading-none",
-            )}
-          >
+          <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 flex items-center justify-center rounded-full text-[10px] font-bold bg-blue-500 text-white leading-none">
             {unreadCount > 99 ? "99+" : unreadCount}
           </span>
         )}
       </button>
 
-      {/* Panel */}
-      {open && (
-        <div
-          className={cn(
-            "absolute right-0 top-11 z-50",
-            "w-[360px] max-w-[calc(100vw-2rem)]",
-            "glass rounded-2xl shadow-2xl shadow-black/40",
-            "flex flex-col max-h-[520px]",
-            "animate-in fade-in zoom-in-95 duration-150",
-          )}
-        >
-          {/* Header del panel */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-800 shrink-0">
-            <div className="flex items-center gap-2">
-              <h3 className="text-sm font-semibold text-white">
-                Notificaciones
-              </h3>
-              {unreadCount > 0 && (
-                <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/20 text-blue-400 border border-blue-500/30">
-                  {unreadCount} nuevas
-                </span>
-              )}
-            </div>
-            <div className="flex items-center gap-1">
-              {unreadCount > 0 && (
-                <button
-                  onClick={markAllRead}
-                  disabled={acting === "all"}
-                  title="Marcar todas como leídas"
-                  className="w-7 h-7 rounded-lg hover:bg-gray-700 flex items-center justify-center text-gray-400 hover:text-white transition-all"
-                >
-                  {acting === "all" ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  ) : (
-                    <CheckCheck className="w-3.5 h-3.5" />
-                  )}
-                </button>
-              )}
-              {readNotifications.length > 0 && (
-                <button
-                  onClick={clearRead}
-                  disabled={acting === "clear"}
-                  title="Eliminar leídas"
-                  className="w-7 h-7 rounded-lg hover:bg-gray-700 flex items-center justify-center text-gray-400 hover:text-red-400 transition-all"
-                >
-                  {acting === "clear" ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  ) : (
-                    <Trash2 className="w-3.5 h-3.5" />
-                  )}
-                </button>
-              )}
-              <button
-                onClick={() => setOpen(false)}
-                className="w-7 h-7 rounded-lg hover:bg-gray-700 flex items-center justify-center text-gray-400 hover:text-white transition-all"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          </div>
-
-          {/* Lista */}
-          <div className="overflow-y-auto flex-1">
-            {loading ? (
-              <div className="flex items-center justify-center py-12">
-                <Loader2 className="w-5 h-5 animate-spin text-blue-400" />
-              </div>
-            ) : notifications.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-gray-800 flex items-center justify-center">
-                  <Bell className="w-5 h-5 text-gray-600" />
-                </div>
-                <p className="text-sm text-gray-500">Sin notificaciones</p>
-              </div>
-            ) : (
-              <div className="py-2">
-                {/* No leídas primero */}
-                {unreadNotifications.length > 0 && (
-                  <>
-                    <p className="px-4 py-1.5 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">
-                      Nuevas
-                    </p>
-                    {unreadNotifications.map((n) => (
-                      <NotifItem
-                        key={n.id}
-                        notif={n}
-                        onRead={markRead}
-                        onDelete={deleteNotif}
-                        acting={acting}
-                      />
-                    ))}
-                  </>
-                )}
-                {/* Leídas */}
-                {readNotifications.length > 0 && (
-                  <>
-                    <p className="px-4 py-1.5 text-[10px] font-semibold text-gray-500 uppercase tracking-wider mt-1">
-                      Anteriores
-                    </p>
-                    {readNotifications.map((n) => (
-                      <NotifItem
-                        key={n.id}
-                        notif={n}
-                        onRead={markRead}
-                        onDelete={deleteNotif}
-                        acting={acting}
-                      />
-                    ))}
-                  </>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
+      {/* Panel renderizado en el body vía portal para evitar clipping */}
+      {mounted && open && createPortal(panelContent, document.body)}
+    </>
   );
 }
 
-// Item individual
+// ── Item individual ────────────────────────────────────────────────
 function NotifItem({
   notif,
   onRead,
@@ -309,7 +352,6 @@ function NotifItem({
   const Icon = cfg.icon;
   const isDeleting = acting === notif.id + "-del";
   const isReading = acting === notif.id;
-
   const timeAgo = formatDistanceToNow(new Date(notif.createdAt), {
     addSuffix: true,
     locale: es,
@@ -317,11 +359,13 @@ function NotifItem({
 
   return (
     <div
-      className={cn(
-        "group flex gap-3 px-4 py-3 hover:bg-gray-800/40 transition-all cursor-pointer",
-        !notif.isRead && "bg-blue-500/5 border-l-2 border-l-blue-500",
-      )}
       onClick={() => !notif.isRead && onRead(notif.id)}
+      className={cn(
+        "group flex gap-3 px-4 py-3 transition-colors cursor-pointer",
+        notif.isRead
+          ? "hover:bg-gray-800/40"
+          : "bg-blue-500/5 hover:bg-blue-500/10 border-l-2 border-l-blue-500",
+      )}
     >
       {/* Ícono tipo */}
       <div
@@ -345,7 +389,7 @@ function NotifItem({
           >
             {notif.title}
           </p>
-          {/* Acciones (aparecen al hover) */}
+          {/* Acciones hover */}
           <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
             {!notif.isRead && (
               <button
@@ -354,7 +398,7 @@ function NotifItem({
                   onRead(notif.id);
                 }}
                 title="Marcar como leída"
-                className="w-5 h-5 rounded flex items-center justify-center text-gray-500 hover:text-emerald-400"
+                className="w-5 h-5 rounded flex items-center justify-center text-gray-500 hover:text-emerald-400 transition-colors"
               >
                 {isReading ? (
                   <Loader2 className="w-3 h-3 animate-spin" />
@@ -369,7 +413,7 @@ function NotifItem({
                 onDelete(notif.id);
               }}
               title="Eliminar"
-              className="w-5 h-5 rounded flex items-center justify-center text-gray-500 hover:text-red-400"
+              className="w-5 h-5 rounded flex items-center justify-center text-gray-500 hover:text-red-400 transition-colors"
             >
               {isDeleting ? (
                 <Loader2 className="w-3 h-3 animate-spin" />
@@ -385,7 +429,7 @@ function NotifItem({
         <p className="text-[10px] text-gray-600 mt-1">{timeAgo}</p>
       </div>
 
-      {/* Punto de no leída */}
+      {/* Indicador no leída */}
       {!notif.isRead && (
         <div className="w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0 mt-2" />
       )}

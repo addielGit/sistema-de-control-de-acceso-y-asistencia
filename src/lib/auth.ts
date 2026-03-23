@@ -1,63 +1,63 @@
 // src/lib/auth.ts
-import { NextAuthOptions } from 'next-auth'
-import CredentialsProvider from 'next-auth/providers/credentials'
-import bcrypt from 'bcryptjs'
-import { prisma } from './prisma'
-import { loginSchema } from './validations'
+import { NextAuthOptions } from "next-auth";
+import CredentialsProvider from "next-auth/providers/credentials";
+import bcrypt from "bcryptjs";
+import { prisma } from "./prisma";
+import { loginSchema } from "./validations";
 
 export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
-      name: 'credentials',
+      name: "credentials",
       credentials: {
-        email: { label: 'Email', type: 'email' },
-        password: { label: 'Password', type: 'password' },
+        email: { label: "Email", type: "email" },
+        password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        const parsed = loginSchema.safeParse(credentials)
-        if (!parsed.success) throw new Error('Credenciales inválidas')
+        const parsed = loginSchema.safeParse(credentials);
+        if (!parsed.success) throw new Error("Credenciales inválidas");
 
-        const { email, password } = parsed.data
-        const user = await prisma.user.findUnique({ where: { email } })
+        const { email, password } = parsed.data;
+        const user = await prisma.user.findUnique({ where: { email } });
+        if (!user || !user.isActive)
+          throw new Error("Usuario no encontrado o inactivo");
 
-        if (!user || !user.isActive) throw new Error('Usuario no encontrado o inactivo')
+        const isValid = await bcrypt.compare(password, user.password);
+        if (!isValid) throw new Error("Contraseña incorrecta");
 
-        const isValid = await bcrypt.compare(password, user.password)
-        if (!isValid) throw new Error('Contraseña incorrecta')
-
+        // ⚠️ NUNCA incluir avatar/image aquí — puede ser base64 y supera el límite de 4KB del JWT cookie
         return {
           id: user.id,
           email: user.email,
           name: user.name,
           role: user.role,
-          image: user.avatar,
-        }
+        };
       },
     }),
   ],
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session: updateData }) {
       if (user) {
-        token.id = user.id
-        token.role = (user as any).role
+        token.id = user.id;
+        token.role = (user as any).role;
+        token.name = user.name;
+        // Sin image — se carga desde /api/profile en el cliente
       }
-      return token
+      // Solo actualizar name desde update() — nunca image/avatar
+      if (trigger === "update" && updateData?.name) {
+        token.name = updateData.name;
+      }
+      return token;
     },
     async session({ session, token }) {
-      if (token) {
-        session.user.id = token.id as string
-        session.user.role = token.role as string
-      }
-      return session
+      session.user.id = token.id as string;
+      session.user.role = token.role as string;
+      session.user.name = token.name as string;
+      // image se omite del JWT — el header lo carga via fetch('/api/profile')
+      return session;
     },
   },
-  pages: {
-    signIn: '/login',
-    error: '/login',
-  },
-  session: {
-    strategy: 'jwt',
-    maxAge: 24 * 60 * 60, // 24 hours
-  },
+  pages: { signIn: "/login", error: "/login" },
+  session: { strategy: "jwt", maxAge: 24 * 60 * 60 },
   secret: process.env.NEXTAUTH_SECRET,
-}
+};
