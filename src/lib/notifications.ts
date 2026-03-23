@@ -78,7 +78,6 @@ export const notify = {
 
   lateAlert: (adminId: string, userName: string, lateMinutes: number) =>
     createNotification({
-      adminId,
       userId: adminId,
       title: "Alerta de retardo",
       message: `${userName} llegó con ${lateMinutes} min de retardo`,
