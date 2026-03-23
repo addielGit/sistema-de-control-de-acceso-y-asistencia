@@ -25,7 +25,7 @@ export const authOptions: NextAuthOptions = {
         const isValid = await bcrypt.compare(password, user.password);
         if (!isValid) throw new Error("Contraseña incorrecta");
 
-        // ⚠️ NUNCA incluir avatar/image aquí — puede ser base64 y supera el límite de 4KB del JWT cookie
+        // NUNCA poner avatar aquí — base64 explota el tamaño del cookie JWT (431 error)
         return {
           id: user.id,
           email: user.email,
@@ -41,19 +41,17 @@ export const authOptions: NextAuthOptions = {
         token.id = user.id;
         token.role = (user as any).role;
         token.name = user.name;
-        // Sin image — se carga desde /api/profile en el cliente
       }
-      // Solo actualizar name desde update() — nunca image/avatar
       if (trigger === "update" && updateData?.name) {
         token.name = updateData.name;
       }
       return token;
     },
+    // NUNCA hacer queries a DB aquí — se llama en cada SSR y rompe el contexto de Next.js
     async session({ session, token }) {
       session.user.id = token.id as string;
       session.user.role = token.role as string;
       session.user.name = token.name as string;
-      // image se omite del JWT — el header lo carga via fetch('/api/profile')
       return session;
     },
   },

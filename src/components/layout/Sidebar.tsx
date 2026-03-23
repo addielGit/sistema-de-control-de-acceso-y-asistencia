@@ -18,92 +18,70 @@ import { cn } from "@/lib/utils";
 import { useAppStore } from "@/store/useAppStore";
 import { useEffect } from "react";
 
-const navItems = [
+const NAV = [
   {
     href: "/dashboard",
     label: "Dashboard",
     icon: LayoutDashboard,
-    adminOnly: false,
+    admin: false,
   },
   {
     href: "/dashboard/attendance",
     label: "Mi Asistencia",
     icon: Clock,
-    adminOnly: false,
+    admin: false,
   },
   {
     href: "/dashboard/history",
     label: "Historial",
     icon: History,
-    adminOnly: false,
+    admin: false,
   },
-  {
-    href: "/dashboard/users",
-    label: "Empleados",
-    icon: Users,
-    adminOnly: true,
-  },
+  { href: "/dashboard/users", label: "Empleados", icon: Users, admin: true },
   {
     href: "/dashboard/reports",
     label: "Reportes",
     icon: FileText,
-    adminOnly: true,
+    admin: true,
   },
-  {
-    href: "/dashboard/audit",
-    label: "Auditoría",
-    icon: Shield,
-    adminOnly: true,
-  },
+  { href: "/dashboard/audit", label: "Auditoría", icon: Shield, admin: true },
   {
     href: "/dashboard/settings",
     label: "Configuración",
     icon: Settings,
-    adminOnly: true,
+    admin: true,
   },
 ];
 
-interface SidebarProps {
-  role: string;
-}
-
-export function Sidebar({ role }: SidebarProps) {
+export function Sidebar({ role }: { role: string }) {
   const pathname = usePathname();
   const { sidebarOpen, setSidebarOpen, toggleSidebar, initSidebar } =
     useAppStore();
   const isAdmin = role === "ADMIN";
-  const items = navItems.filter((i) => !i.adminOnly || isAdmin);
-  const isDesktop = () =>
-    typeof window !== "undefined" && window.innerWidth >= 1024;
+  const items = NAV.filter((i) => !i.admin || isAdmin);
 
-  // Inicializa abierto en desktop, cerrado en móvil
   useEffect(() => {
     initSidebar();
-    const handleResize = () => {
-      if (window.innerWidth < 1024) setSidebarOpen(false);
-      else setSidebarOpen(true);
-    };
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
+    const onResize = () => setSidebarOpen(window.innerWidth >= 1024);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
   }, []);
 
-  // En móvil cierra al navegar
   useEffect(() => {
-    if (!isDesktop()) setSidebarOpen(false);
+    if (window.innerWidth < 1024) setSidebarOpen(false);
   }, [pathname]);
 
-  // Escape cierra
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
+    const h = (e: KeyboardEvent) => {
       if (e.key === "Escape") setSidebarOpen(false);
     };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
   }, []);
 
   return (
     <>
-      {/* Overlay móvil */}
+      {/* Mobile overlay */}
       {sidebarOpen && (
         <div
           className="fixed inset-0 bg-black/60 backdrop-blur-sm z-30 lg:hidden"
@@ -111,31 +89,47 @@ export function Sidebar({ role }: SidebarProps) {
         />
       )}
 
+      {/*
+        DESKTOP: position relative, always in flex flow.
+          - Open:   width 256px  → shell gets (100% - 256px)
+          - Closed: width 64px   → shell gets (100% - 64px)
+          - Both: transition-[width] 300ms so content slides smoothly
+        MOBILE: position fixed, overlay — never affects flex layout
+      */}
       <aside
+        style={{
+          transitionProperty: "width, transform",
+          transitionDuration: "300ms",
+          transitionTimingFunction: "cubic-bezier(0.4,0,0.2,1)",
+        }}
         className={cn(
-          "flex flex-col bg-gray-900 border-r border-gray-800 shrink-0",
-          "transition-all duration-300 ease-in-out",
-          // Móvil: fixed overlay, no ocupa espacio en el flujo
-          "fixed top-0 left-0 h-full z-40",
-          "lg:relative lg:z-auto lg:h-screen",
-          // Ancho: en desktop alterna 256px / 64px (empuja el contenido)
-          // En móvil: siempre 256px pero fuera de pantalla si cerrado
+          "flex flex-col bg-gray-900 border-r border-gray-800 h-screen z-40 shrink-0",
+          // Mobile: fixed overlay
+          "fixed top-0 left-0",
+          // Desktop: back into normal flow
+          "lg:relative lg:z-auto",
+          // Width + translate
           sidebarOpen
             ? "w-64 translate-x-0"
             : "w-64 -translate-x-full lg:w-16 lg:translate-x-0",
         )}
       >
         {/* Logo */}
-        <div className="flex items-center h-16 px-4 border-b border-gray-800 shrink-0">
+        <div className="flex items-center h-16 px-4 border-b border-gray-800 shrink-0 overflow-hidden">
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-8 h-8 rounded-lg bg-blue-500/20 border border-blue-500/30 flex items-center justify-center shrink-0">
               <Shield className="w-4 h-4 text-blue-400" />
             </div>
             <span
+              style={{
+                transitionProperty: "opacity, max-width",
+                transitionDuration: "250ms",
+              }}
               className={cn(
-                "font-bold text-white text-lg gradient-text whitespace-nowrap",
-                "transition-all duration-300 overflow-hidden",
-                sidebarOpen ? "w-auto opacity-100" : "w-0 opacity-0 lg:hidden",
+                "font-bold text-lg gradient-text whitespace-nowrap overflow-hidden",
+                sidebarOpen
+                  ? "opacity-100 max-w-[200px]"
+                  : "opacity-0 max-w-0 lg:hidden",
               )}
             >
               AccessFlow
@@ -143,14 +137,18 @@ export function Sidebar({ role }: SidebarProps) {
           </div>
         </div>
 
-        {/* Botón colapsar — solo desktop */}
+        {/* Collapse button — desktop only */}
         <button
           onClick={toggleSidebar}
-          className="hidden lg:flex absolute -right-3 top-20 w-6 h-6 bg-gray-800 border border-gray-700 rounded-full items-center justify-center hover:bg-gray-700 z-10 shrink-0"
+          className="hidden lg:flex absolute -right-3 top-[72px] w-6 h-6 bg-gray-800 border border-gray-700 rounded-full items-center justify-center hover:bg-gray-700 z-10"
         >
           <ChevronLeft
+            style={{
+              transitionProperty: "transform",
+              transitionDuration: "300ms",
+            }}
             className={cn(
-              "w-3 h-3 text-gray-400 transition-transform duration-300",
+              "w-3 h-3 text-gray-400",
               !sidebarOpen && "rotate-180",
             )}
           />
@@ -158,8 +156,8 @@ export function Sidebar({ role }: SidebarProps) {
 
         {/* Nav */}
         <nav className="flex-1 py-4 px-2 space-y-1 overflow-y-auto overflow-x-hidden">
-          {items.map(({ href, label, icon: Icon }) => {
-            const isActive =
+          {items.map(({ href, label, icon: Icon, admin }) => {
+            const active =
               pathname === href ||
               (href !== "/dashboard" && pathname.startsWith(href));
             return (
@@ -168,9 +166,9 @@ export function Sidebar({ role }: SidebarProps) {
                 href={href}
                 title={!sidebarOpen ? label : undefined}
                 className={cn(
-                  "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all group",
-                  "whitespace-nowrap overflow-hidden",
-                  isActive
+                  "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium group overflow-hidden whitespace-nowrap",
+                  "transition-colors duration-150",
+                  active
                     ? "bg-blue-600/20 text-blue-400 border border-blue-500/20"
                     : "text-gray-400 hover:text-white hover:bg-gray-800",
                 )}
@@ -178,16 +176,20 @@ export function Sidebar({ role }: SidebarProps) {
                 <Icon
                   className={cn(
                     "w-5 h-5 shrink-0",
-                    isActive
+                    active
                       ? "text-blue-400"
                       : "text-gray-500 group-hover:text-white",
                   )}
                 />
                 <span
+                  style={{
+                    transitionProperty: "opacity, max-width",
+                    transitionDuration: "250ms",
+                  }}
                   className={cn(
-                    "transition-all duration-300 overflow-hidden",
+                    "overflow-hidden",
                     sidebarOpen
-                      ? "opacity-100 max-w-xs"
+                      ? "opacity-100 max-w-[200px]"
                       : "opacity-0 max-w-0 lg:hidden",
                   )}
                 >
@@ -203,14 +205,18 @@ export function Sidebar({ role }: SidebarProps) {
           <button
             onClick={() => signOut({ callbackUrl: "/login" })}
             title={!sidebarOpen ? "Cerrar sesión" : undefined}
-            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-400 hover:text-red-400 hover:bg-red-500/10 w-full transition-all group overflow-hidden"
+            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-400 hover:text-red-400 hover:bg-red-500/10 w-full overflow-hidden whitespace-nowrap transition-colors duration-150"
           >
-            <LogOut className="w-5 h-5 shrink-0 group-hover:text-red-400" />
+            <LogOut className="w-5 h-5 shrink-0" />
             <span
+              style={{
+                transitionProperty: "opacity, max-width",
+                transitionDuration: "250ms",
+              }}
               className={cn(
-                "transition-all duration-300 overflow-hidden whitespace-nowrap",
+                "overflow-hidden",
                 sidebarOpen
-                  ? "opacity-100 max-w-xs"
+                  ? "opacity-100 max-w-[200px]"
                   : "opacity-0 max-w-0 lg:hidden",
               )}
             >

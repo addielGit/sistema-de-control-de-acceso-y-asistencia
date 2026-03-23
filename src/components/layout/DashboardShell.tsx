@@ -671,8 +671,14 @@ function AppHeader() {
 // La transición de ancho del sidebar (transition-all duration-300) arrastra el contenido.
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
+  // min-w-0 prevents flex child from overflowing its container
+  // flex-1 makes this grow to fill remaining space after sidebar
+  // As sidebar transitions width (256px → 64px), this automatically expands
   return (
-    <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
+    <div
+      className="flex-1 min-w-0 flex flex-col"
+      style={{ overflow: "hidden" }}
+    >
       <AppHeader />
       <main className="flex-1 overflow-y-auto p-4 lg:p-6">{children}</main>
     </div>
