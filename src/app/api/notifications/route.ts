@@ -12,26 +12,31 @@ export async function GET(req: NextRequest) {
 
   const { searchParams } = new URL(req.url);
   const unreadOnly = searchParams.get("unread") === "true";
-  const limit = parseInt(searchParams.get("limit") || "20");
+  const limit = Math.min(parseInt(searchParams.get("limit") || "50"), 100);
+  const page = parseInt(searchParams.get("page") || "1");
 
-  const [notifications, unreadCount] = await Promise.all([
+  const where = {
+    userId: session.user.id,
+    ...(unreadOnly && { isRead: false }),
+  };
+
+  const [notifications, total, unreadCount] = await Promise.all([
     prisma.notification.findMany({
-      where: {
-        userId: session.user.id,
-        ...(unreadOnly && { isRead: false }),
-      },
+      where,
       orderBy: { createdAt: "desc" },
+      skip: (page - 1) * limit,
       take: limit,
     }),
+    prisma.notification.count({ where }),
     prisma.notification.count({
       where: { userId: session.user.id, isRead: false },
     }),
   ]);
 
-  return NextResponse.json({ notifications, unreadCount });
+  return NextResponse.json({ notifications, total, unreadCount, page, limit });
 }
 
-// PATCH — marcar como leída(s)
+// PATCH — marcar como leída(s) — cualquier usuario sobre sus propias notifs
 export async function PATCH(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session)
@@ -49,10 +54,14 @@ export async function PATCH(req: NextRequest) {
   }
 
   if (id) {
-    await prisma.notification.updateMany({
+    // Verificar que la notificación pertenece al usuario
+    const notif = await prisma.notification.findFirst({
       where: { id, userId: session.user.id },
-      data: { isRead: true },
     });
+    if (!notif)
+      return NextResponse.json({ error: "No encontrada" }, { status: 404 });
+
+    await prisma.notification.update({ where: { id }, data: { isRead: true } });
     return NextResponse.json({ success: true });
   }
 
@@ -62,27 +71,41 @@ export async function PATCH(req: NextRequest) {
   );
 }
 
-// DELETE — eliminar una notificación
+// DELETE — solo administradores pueden eliminar notificaciones
 export async function DELETE(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session)
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
 
+  // Solo admins pueden eliminar
+  if (session.user.role !== "ADMIN") {
+    return NextResponse.json(
+      { error: "Solo los administradores pueden eliminar notificaciones" },
+      { status: 403 },
+    );
+  }
+
   const { searchParams } = new URL(req.url);
   const id = searchParams.get("id");
   const all = searchParams.get("all") === "true";
+  const userId = searchParams.get("userId"); // admin puede eliminar de cualquier usuario
 
   if (all) {
+    // Eliminar todas las leídas del usuario especificado (o del admin si no se especifica)
+    const targetUserId = userId || session.user.id;
     await prisma.notification.deleteMany({
-      where: { userId: session.user.id, isRead: true },
+      where: { userId: targetUserId, isRead: true },
     });
     return NextResponse.json({ success: true });
   }
 
   if (id) {
-    await prisma.notification.deleteMany({
-      where: { id, userId: session.user.id },
-    });
+    // Verificar que existe (admin puede eliminar de cualquier usuario)
+    const notif = await prisma.notification.findUnique({ where: { id } });
+    if (!notif)
+      return NextResponse.json({ error: "No encontrada" }, { status: 404 });
+
+    await prisma.notification.delete({ where: { id } });
     return NextResponse.json({ success: true });
   }
 
