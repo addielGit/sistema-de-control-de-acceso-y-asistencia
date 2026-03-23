@@ -12,6 +12,7 @@ import {
   LogOut,
   History,
   Settings,
+  Palette,
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { cn } from "@/lib/utils";
@@ -50,6 +51,12 @@ const NAV = [
     label: "Configuración",
     icon: Settings,
     admin: true,
+  },
+  {
+    href: "/dashboard/appearance",
+    label: "Apariencia",
+    icon: Palette,
+    admin: false,
   },
 ];
 

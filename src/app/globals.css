@@ -3,72 +3,118 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  :root {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 217.2 91.2% 59.8%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 224.3 76.3% 48%;
-    --radius: 0.5rem;
-  }
+/* ── CSS Custom Properties (set by ThemeProvider via JS) ──────────── */
+:root {
+  --bg-base: #030712;
+  --bg-surface: #111827;
+  --bg-elevated: #0f172a;
+  --bg-input: #1f2937;
+  --bg-hover: #1f2937;
+  --border-base: #374151;
+  --border-muted: #1f2937;
+  --text-primary: #f9fafb;
+  --text-secondary: #9ca3af;
+  --text-muted: #6b7280;
+  --accent: #3b82f6;
+  --accent-hover: #2563eb;
+  --accent-muted: rgba(59, 130, 246, 0.15);
+  --accent-text: #93c5fd;
+  --glass-bg: rgba(17, 24, 39, 0.8);
+  --glass-border: rgba(55, 65, 81, 0.5);
 }
 
 @layer base {
   * {
     @apply border-border;
+    box-sizing: border-box;
+  }
+  html {
+    background-color: var(--bg-base);
+    color: var(--text-primary);
   }
   body {
-    @apply bg-background text-foreground;
+    background-color: var(--bg-base);
+    color: var(--text-primary);
   }
 }
 
-/* Custom scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+/* ── Theme utility classes ──────────────────────────────────────────── */
+.bg-theme-base {
+  background-color: var(--bg-base) !important;
 }
-::-webkit-scrollbar-track {
-  @apply bg-gray-900;
+.bg-theme-surface {
+  background-color: var(--bg-surface) !important;
 }
-::-webkit-scrollbar-thumb {
-  @apply bg-gray-700 rounded-full;
+.bg-theme-elevated {
+  background-color: var(--bg-elevated) !important;
 }
-::-webkit-scrollbar-thumb:hover {
-  @apply bg-gray-600;
+.bg-theme-input {
+  background-color: var(--bg-input) !important;
+}
+.bg-theme-hover {
+  background-color: var(--bg-hover) !important;
+}
+.border-theme {
+  border-color: var(--border-base) !important;
+}
+.border-theme-muted {
+  border-color: var(--border-muted) !important;
+}
+.text-theme {
+  color: var(--text-primary) !important;
+}
+.text-theme-secondary {
+  color: var(--text-secondary) !important;
+}
+.text-theme-muted {
+  color: var(--text-muted) !important;
+}
+.text-accent {
+  color: var(--accent-text) !important;
+}
+.bg-accent {
+  background-color: var(--accent) !important;
+}
+.bg-accent-muted {
+  background-color: var(--accent-muted) !important;
+}
+.border-accent {
+  border-color: var(--accent) !important;
 }
 
-/* Glass effect */
+/* ── Glass effect ────────────────────────────────────────────────────── */
 .glass {
-  background: rgba(17, 24, 39, 0.8);
+  background: var(--glass-bg);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(55, 65, 81, 0.5);
+  border: 1px solid var(--glass-border);
 }
 
-/* Gradient text */
+/* ── Gradient text ───────────────────────────────────────────────────── */
 .gradient-text {
-  background: linear-gradient(135deg, #60a5fa, #a78bfa);
+  background: linear-gradient(135deg, var(--accent), var(--accent-text));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
-/* Status pills */
+/* ── Scrollbar ───────────────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background-color: var(--bg-base);
+}
+::-webkit-scrollbar-thumb {
+  background-color: var(--border-base);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--text-muted);
+}
+
+/* ── Status pills ────────────────────────────────────────────────────── */
 .status-present {
   @apply text-emerald-400 bg-emerald-400/10 border border-emerald-400/20;
 }
@@ -82,7 +128,7 @@
   @apply text-blue-400  bg-blue-400/10   border border-blue-400/20;
 }
 
-/* Loading skeleton */
+/* ── Skeleton ────────────────────────────────────────────────────────── */
 @keyframes shimmer {
   0% {
     background-position: -200% 0;
@@ -92,32 +138,39 @@
   }
 }
 .skeleton {
-  background: linear-gradient(90deg, #1f2937 25%, #374151 50%, #1f2937 75%);
+  background: linear-gradient(
+    90deg,
+    var(--bg-surface) 25%,
+    var(--bg-input) 50%,
+    var(--bg-surface) 75%
+  );
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
 }
 
-/* Pulse glow */
+/* ── Pulse glow ──────────────────────────────────────────────────────── */
 @keyframes pulse-glow {
   0%,
   100% {
-    box-shadow: 0 0 0 0 rgba(96, 165, 250, 0);
+    box-shadow: 0 0 0 0 transparent;
   }
   50% {
-    box-shadow: 0 0 0 6px rgba(96, 165, 250, 0.15);
+    box-shadow: 0 0 0 6px var(--accent-muted);
   }
 }
 .pulse-glow {
   animation: pulse-glow 2s infinite;
 }
 
-/* Date / time inputs */
+/* ── Date / time inputs ──────────────────────────────────────────────── */
 input[type="date"],
 input[type="time"],
 input[type="datetime-local"] {
   color-scheme: dark;
+  background-color: var(--bg-input);
+  color: var(--text-primary);
+  border-color: var(--border-base);
 }
-
 input[type="date"]::-webkit-calendar-picker-indicator,
 input[type="time"]::-webkit-calendar-picker-indicator {
   background-color: transparent;
@@ -130,7 +183,7 @@ input[type="time"]:hover::-webkit-calendar-picker-indicator {
   opacity: 1;
 }
 
-/* Select */
+/* ── Select ──────────────────────────────────────────────────────────── */
 select {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
   background-repeat: no-repeat;
@@ -138,8 +191,26 @@ select {
   padding-right: 36px !important;
   appearance: none;
   -webkit-appearance: none;
+  background-color: var(--bg-input);
+  color: var(--text-primary);
+  border-color: var(--border-base);
 }
 select option {
-  background-color: #111827;
-  color: #f9fafb;
+  background-color: var(--bg-surface);
+  color: var(--text-primary);
+}
+
+/* ── Light theme overrides ───────────────────────────────────────────── */
+.light .glass {
+  background: var(--glass-bg);
+  border-color: var(--glass-border);
+}
+.light input[type="date"],
+.light input[type="time"],
+.light input[type="datetime-local"] {
+  color-scheme: light;
+}
+.light input[type="date"]::-webkit-calendar-picker-indicator,
+.light input[type="time"]::-webkit-calendar-picker-indicator {
+  filter: none;
 }

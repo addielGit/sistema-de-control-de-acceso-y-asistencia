@@ -1,22 +1,35 @@
 // src/app/layout.tsx
-import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
-import './globals.css'
-import { Providers } from '@/components/Providers'
+import type { Metadata } from "next";
+import { Inter } from "next/font/google";
+import "./globals.css";
+import { Providers } from "@/components/Providers";
+import { ThemeProvider } from "@/components/ThemeProvider";
 
-const inter = Inter({ subsets: ['latin'] })
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: 'AccessFlow | Control de Acceso y Asistencia',
-  description: 'Sistema moderno de control de acceso y gestión de asistencia',
-}
+  title: "AccessFlow | Control de Acceso y Asistencia",
+  description: "Sistema moderno de control de acceso y gestión de asistencia",
+};
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
-    <html lang="es" className="dark">
-      <body className={`${inter.className} bg-gray-950 text-gray-100 antialiased`}>
-        <Providers>{children}</Providers>
+    <html lang="es">
+      <body
+        className={`${inter.className} antialiased`}
+        style={{
+          backgroundColor: "var(--bg-base)",
+          color: "var(--text-primary)",
+        }}
+      >
+        <Providers>
+          <ThemeProvider>{children}</ThemeProvider>
+        </Providers>
       </body>
     </html>
-  )
+  );
 }
