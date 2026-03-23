@@ -126,7 +126,7 @@ export default function LoginPage() {
           </form>
 
           {/* Demo credentials */}
-          <div className="mt-6 p-4 bg-gray-900/50 rounded-xl border border-gray-800">
+          {/* <div className="mt-6 p-4 bg-gray-900/50 rounded-xl border border-gray-800">
             <p className="text-xs text-gray-400 font-medium mb-2">
               🔑 Credenciales de demostración
             </p>
@@ -140,7 +140,7 @@ export default function LoginPage() {
                 maria@accessflow.com / employee123
               </p>
             </div>
-          </div>
+          </div> */}
         </div>
       </div>
     </div>
