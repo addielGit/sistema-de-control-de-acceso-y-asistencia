@@ -1,0 +1,394 @@
+// src/components/layout/NotificationPanel.tsx
+"use client";
+import { useEffect, useRef, useState, useCallback } from "react";
+import {
+  Bell,
+  X,
+  Check,
+  CheckCheck,
+  Trash2,
+  Loader2,
+  Info,
+  AlertTriangle,
+  CheckCircle,
+  XCircle,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { formatDistanceToNow } from "date-fns";
+import { es } from "date-fns/locale";
+
+interface Notification {
+  id: string;
+  title: string;
+  message: string;
+  type: "INFO" | "WARNING" | "SUCCESS" | "ERROR";
+  isRead: boolean;
+  createdAt: string;
+}
+
+const TYPE_CONFIG = {
+  INFO: {
+    icon: Info,
+    color: "text-blue-400",
+    bg: "bg-blue-400/10",
+    border: "border-blue-400/20",
+  },
+  WARNING: {
+    icon: AlertTriangle,
+    color: "text-amber-400",
+    bg: "bg-amber-400/10",
+    border: "border-amber-400/20",
+  },
+  SUCCESS: {
+    icon: CheckCircle,
+    color: "text-emerald-400",
+    bg: "bg-emerald-400/10",
+    border: "border-emerald-400/20",
+  },
+  ERROR: {
+    icon: XCircle,
+    color: "text-red-400",
+    bg: "bg-red-400/10",
+    border: "border-red-400/20",
+  },
+};
+
+export function NotificationPanel() {
+  const [open, setOpen] = useState(false);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [acting, setActing] = useState<string | null>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  // Fetch notificaciones
+  const fetchNotifications = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
+    try {
+      const res = await fetch("/api/notifications?limit=30");
+      const data = await res.json();
+      setNotifications(data.notifications || []);
+      setUnreadCount(data.unreadCount || 0);
+    } finally {
+      if (!silent) setLoading(false);
+    }
+  }, []);
+
+  // Polling cada 30 segundos
+  useEffect(() => {
+    fetchNotifications();
+    const interval = setInterval(() => fetchNotifications(true), 30_000);
+    return () => clearInterval(interval);
+  }, [fetchNotifications]);
+
+  // Cerrar al hacer click fuera
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  // Cerrar con Escape
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
+
+  const markRead = async (id: string) => {
+    setActing(id);
+    await fetch("/api/notifications", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id }),
+    });
+    setNotifications((n) =>
+      n.map((x) => (x.id === id ? { ...x, isRead: true } : x)),
+    );
+    setUnreadCount((c) => Math.max(0, c - 1));
+    setActing(null);
+  };
+
+  const markAllRead = async () => {
+    setActing("all");
+    await fetch("/api/notifications", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ markAll: true }),
+    });
+    setNotifications((n) => n.map((x) => ({ ...x, isRead: true })));
+    setUnreadCount(0);
+    setActing(null);
+  };
+
+  const deleteNotif = async (id: string) => {
+    setActing(id + "-del");
+    await fetch(`/api/notifications?id=${id}`, { method: "DELETE" });
+    setNotifications((n) => n.filter((x) => x.id !== id));
+    setActing(null);
+  };
+
+  const clearRead = async () => {
+    setActing("clear");
+    await fetch("/api/notifications?all=true", { method: "DELETE" });
+    setNotifications((n) => n.filter((x) => !x.isRead));
+    setActing(null);
+  };
+
+  const handleBellClick = () => {
+    setOpen((o) => !o);
+    if (!open) fetchNotifications();
+  };
+
+  const readNotifications = notifications.filter((n) => n.isRead);
+  const unreadNotifications = notifications.filter((n) => !n.isRead);
+
+  return (
+    <div className="relative" ref={panelRef}>
+      {/* Botón campana */}
+      <button
+        onClick={handleBellClick}
+        className={cn(
+          "relative w-9 h-9 rounded-lg border flex items-center justify-center transition-all",
+          open
+            ? "bg-blue-600/20 border-blue-500/40 text-blue-400"
+            : "bg-gray-800 hover:bg-gray-700 border-gray-700 text-gray-400",
+        )}
+      >
+        <Bell className="w-4 h-4" />
+        {unreadCount > 0 && (
+          <span
+            className={cn(
+              "absolute -top-1 -right-1 min-w-[16px] h-4 px-1 flex items-center justify-center",
+              "rounded-full text-[10px] font-bold bg-blue-500 text-white leading-none",
+            )}
+          >
+            {unreadCount > 99 ? "99+" : unreadCount}
+          </span>
+        )}
+      </button>
+
+      {/* Panel */}
+      {open && (
+        <div
+          className={cn(
+            "absolute right-0 top-11 z-50",
+            "w-[360px] max-w-[calc(100vw-2rem)]",
+            "glass rounded-2xl shadow-2xl shadow-black/40",
+            "flex flex-col max-h-[520px]",
+            "animate-in fade-in zoom-in-95 duration-150",
+          )}
+        >
+          {/* Header del panel */}
+          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-800 shrink-0">
+            <div className="flex items-center gap-2">
+              <h3 className="text-sm font-semibold text-white">
+                Notificaciones
+              </h3>
+              {unreadCount > 0 && (
+                <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/20 text-blue-400 border border-blue-500/30">
+                  {unreadCount} nuevas
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-1">
+              {unreadCount > 0 && (
+                <button
+                  onClick={markAllRead}
+                  disabled={acting === "all"}
+                  title="Marcar todas como leídas"
+                  className="w-7 h-7 rounded-lg hover:bg-gray-700 flex items-center justify-center text-gray-400 hover:text-white transition-all"
+                >
+                  {acting === "all" ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <CheckCheck className="w-3.5 h-3.5" />
+                  )}
+                </button>
+              )}
+              {readNotifications.length > 0 && (
+                <button
+                  onClick={clearRead}
+                  disabled={acting === "clear"}
+                  title="Eliminar leídas"
+                  className="w-7 h-7 rounded-lg hover:bg-gray-700 flex items-center justify-center text-gray-400 hover:text-red-400 transition-all"
+                >
+                  {acting === "clear" ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Trash2 className="w-3.5 h-3.5" />
+                  )}
+                </button>
+              )}
+              <button
+                onClick={() => setOpen(false)}
+                className="w-7 h-7 rounded-lg hover:bg-gray-700 flex items-center justify-center text-gray-400 hover:text-white transition-all"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Lista */}
+          <div className="overflow-y-auto flex-1">
+            {loading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="w-5 h-5 animate-spin text-blue-400" />
+              </div>
+            ) : notifications.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-gray-800 flex items-center justify-center">
+                  <Bell className="w-5 h-5 text-gray-600" />
+                </div>
+                <p className="text-sm text-gray-500">Sin notificaciones</p>
+              </div>
+            ) : (
+              <div className="py-2">
+                {/* No leídas primero */}
+                {unreadNotifications.length > 0 && (
+                  <>
+                    <p className="px-4 py-1.5 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">
+                      Nuevas
+                    </p>
+                    {unreadNotifications.map((n) => (
+                      <NotifItem
+                        key={n.id}
+                        notif={n}
+                        onRead={markRead}
+                        onDelete={deleteNotif}
+                        acting={acting}
+                      />
+                    ))}
+                  </>
+                )}
+                {/* Leídas */}
+                {readNotifications.length > 0 && (
+                  <>
+                    <p className="px-4 py-1.5 text-[10px] font-semibold text-gray-500 uppercase tracking-wider mt-1">
+                      Anteriores
+                    </p>
+                    {readNotifications.map((n) => (
+                      <NotifItem
+                        key={n.id}
+                        notif={n}
+                        onRead={markRead}
+                        onDelete={deleteNotif}
+                        acting={acting}
+                      />
+                    ))}
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Item individual
+function NotifItem({
+  notif,
+  onRead,
+  onDelete,
+  acting,
+}: {
+  notif: Notification;
+  onRead: (id: string) => void;
+  onDelete: (id: string) => void;
+  acting: string | null;
+}) {
+  const cfg = TYPE_CONFIG[notif.type] || TYPE_CONFIG.INFO;
+  const Icon = cfg.icon;
+  const isDeleting = acting === notif.id + "-del";
+  const isReading = acting === notif.id;
+
+  const timeAgo = formatDistanceToNow(new Date(notif.createdAt), {
+    addSuffix: true,
+    locale: es,
+  });
+
+  return (
+    <div
+      className={cn(
+        "group flex gap-3 px-4 py-3 hover:bg-gray-800/40 transition-all cursor-pointer",
+        !notif.isRead && "bg-blue-500/5 border-l-2 border-l-blue-500",
+      )}
+      onClick={() => !notif.isRead && onRead(notif.id)}
+    >
+      {/* Ícono tipo */}
+      <div
+        className={cn(
+          "w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5 border",
+          cfg.bg,
+          cfg.border,
+        )}
+      >
+        <Icon className={cn("w-4 h-4", cfg.color)} />
+      </div>
+
+      {/* Contenido */}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-start justify-between gap-2">
+          <p
+            className={cn(
+              "text-xs font-semibold leading-tight",
+              notif.isRead ? "text-gray-300" : "text-white",
+            )}
+          >
+            {notif.title}
+          </p>
+          {/* Acciones (aparecen al hover) */}
+          <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+            {!notif.isRead && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onRead(notif.id);
+                }}
+                title="Marcar como leída"
+                className="w-5 h-5 rounded flex items-center justify-center text-gray-500 hover:text-emerald-400"
+              >
+                {isReading ? (
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                ) : (
+                  <Check className="w-3 h-3" />
+                )}
+              </button>
+            )}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete(notif.id);
+              }}
+              title="Eliminar"
+              className="w-5 h-5 rounded flex items-center justify-center text-gray-500 hover:text-red-400"
+            >
+              {isDeleting ? (
+                <Loader2 className="w-3 h-3 animate-spin" />
+              ) : (
+                <X className="w-3 h-3" />
+              )}
+            </button>
+          </div>
+        </div>
+        <p className="text-xs text-gray-400 mt-0.5 leading-relaxed">
+          {notif.message}
+        </p>
+        <p className="text-[10px] text-gray-600 mt-1">{timeAgo}</p>
+      </div>
+
+      {/* Punto de no leída */}
+      {!notif.isRead && (
+        <div className="w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0 mt-2" />
+      )}
+    </div>
+  );
+}
