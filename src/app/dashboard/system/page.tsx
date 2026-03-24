@@ -160,6 +160,7 @@ export default function SystemPage() {
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
+    // Read to validate structure, but store the raw File for sending
     const reader = new FileReader()
     reader.onload = () => {
       try {
@@ -168,7 +169,8 @@ export default function SystemPage() {
           toast.error('Archivo no válido — debe ser un backup de AccessFlow')
           return
         }
-        setPendingFile(parsed)
+        // Store both parsed (for display) and raw file (for upload)
+        setPendingFile({ meta: parsed.meta, rawFile: file })
         setConfirm('restore')
       } catch {
         toast.error('No se pudo leer el archivo JSON')
@@ -179,13 +181,16 @@ export default function SystemPage() {
   }
 
   const handleRestore = async () => {
-    if (!pendingFile) return
+    if (!pendingFile?.rawFile) return
     setConfirm(null)
     await restore.run(async () => {
+      // Send as FormData to bypass Vercel 4.5MB JSON body limit
+      const form = new FormData()
+      form.append('file', pendingFile.rawFile)
       const res  = await fetch('/api/admin/restore', {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify(pendingFile),
+        method: 'POST',
+        body:   form,
+        // No Content-Type header — browser sets it automatically with boundary
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
@@ -341,7 +346,7 @@ export default function SystemPage() {
       <ConfirmModal
         open={confirm === 'restore'}
         title="¿Restaurar backup?"
-        description={`Se reemplazarán TODOS los datos actuales con los del backup generado el ${pendingFile?.meta?.createdAt?.slice(0,10) ?? ''}. Esta acción es irreversible.`}
+        description={`Se reemplazarán TODOS los datos actuales con los del backup generado el ${pendingFile?.meta?.createdAt?.slice(0,10) ?? 'fecha desconocida'}. Esta acción es irreversible.`}
         danger
         loading={restore.state.status === 'loading'}
         onConfirm={handleRestore}
