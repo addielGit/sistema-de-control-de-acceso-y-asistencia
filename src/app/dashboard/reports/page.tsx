@@ -1,159 +1,116 @@
 // src/app/dashboard/reports/page.tsx
-"use client";
-import { useState } from "react";
-import {
-  Download,
-  FileText,
-  Loader2,
-  Calendar,
-  Building2,
-  FileDown,
-} from "lucide-react";
-import toast from "react-hot-toast";
-import { cn } from "@/lib/utils";
-import { format } from "date-fns";
-import { es } from "date-fns/locale";
+'use client'
+import { useState } from 'react'
+import { Download, FileText, Loader2, Calendar, Building2, FileDown } from 'lucide-react'
+import toast from 'react-hot-toast'
+import { cn } from '@/lib/utils'
+import { format } from 'date-fns'
+import { es } from 'date-fns/locale'
 
-const DEPTS = [
-  "Tecnología",
-  "Recursos Humanos",
-  "Ventas",
-  "Marketing",
-  "Operaciones",
-  "Finanzas",
-];
+const DEPTS = ['Tecnología','Recursos Humanos','Ventas','Marketing','Operaciones','Finanzas']
 
 const STATUS_LABELS: Record<string, string> = {
-  PRESENT: "Presente",
-  LATE: "Retardo",
-  ABSENT: "Ausente",
-  HALF_DAY: "Medio día",
-};
+  PRESENT: 'Presente', LATE: 'Retardo', ABSENT: 'Ausente', HALF_DAY: 'Medio día',
+}
 
 const STATUS_COLORS: Record<string, string> = {
-  PRESENT: "#34d399",
-  LATE: "#fbbf24",
-  ABSENT: "#f87171",
-  HALF_DAY: "#60a5fa",
-};
+  PRESENT: '#34d399', LATE: '#fbbf24', ABSENT: '#f87171', HALF_DAY: '#60a5fa',
+}
 
 export default function ReportsPage() {
-  const [loading, setLoading] = useState<string | null>(null);
-  const [previewData, setPreview] = useState<any[] | null>(null);
+  const [loading, setLoading]   = useState<string | null>(null)
+  const [previewData, setPreview] = useState<any[] | null>(null)
   const [form, setForm] = useState({
-    startDate: new Date(Date.now() - 30 * 86400000).toISOString().split("T")[0],
-    endDate: new Date().toISOString().split("T")[0],
-    department: "",
-  });
+    startDate:  new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0],
+    endDate:    new Date().toISOString().split('T')[0],
+    department: '',
+  })
 
   const fetchData = async () => {
-    const params = new URLSearchParams({ ...form, format: "JSON" });
-    const res = await fetch(`/api/reports?${params}`);
-    if (!res.ok) throw new Error("Error obteniendo datos");
-    const json = await res.json();
-    return json.data as any[];
-  };
+    const params = new URLSearchParams({ ...form, format: 'JSON' })
+    const res    = await fetch(`/api/reports?${params}`)
+    if (!res.ok) throw new Error('Error obteniendo datos')
+    const json   = await res.json()
+    return json.data as any[]
+  }
 
   const handleCSV = async () => {
-    setLoading("csv");
+    setLoading('csv')
     try {
-      const params = new URLSearchParams({ ...form, format: "CSV" });
-      const res = await fetch(`/api/reports?${params}`);
-      if (!res.ok) throw new Error("Error generando reporte");
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `asistencia_${format(new Date(), "yyyyMMdd")}.csv`;
-      a.click();
-      URL.revokeObjectURL(url);
-      toast.success("CSV descargado");
-    } catch (err: any) {
-      toast.error(err.message);
-    } finally {
-      setLoading(null);
-    }
-  };
+      const params = new URLSearchParams({ ...form, format: 'CSV' })
+      const res    = await fetch(`/api/reports?${params}`)
+      if (!res.ok) throw new Error('Error generando reporte')
+      const blob   = await res.blob()
+      const url    = URL.createObjectURL(blob)
+      const a      = document.createElement('a')
+      a.href       = url
+      a.download   = `asistencia_${format(new Date(), 'yyyyMMdd')}.csv`
+      a.click()
+      URL.revokeObjectURL(url)
+      toast.success('CSV descargado')
+    } catch (err: any) { toast.error(err.message) }
+    finally { setLoading(null) }
+  }
 
   const handlePDF = async () => {
-    setLoading("pdf");
+    setLoading('pdf')
     try {
-      const data = await fetchData();
-      if (!data.length) {
-        toast.error("No hay datos para el período seleccionado");
-        return;
-      }
-      generatePDF(data, form);
-      toast.success("PDF generado");
-    } catch (err: any) {
-      toast.error(err.message);
-    } finally {
-      setLoading(null);
-    }
-  };
+      const data = await fetchData()
+      if (!data.length) { toast.error('No hay datos para el período seleccionado'); return }
+      generatePDF(data, form)
+      toast.success('PDF generado')
+    } catch (err: any) { toast.error(err.message) }
+    finally { setLoading(null) }
+  }
 
   const handlePreview = async () => {
-    setLoading("preview");
+    setLoading('preview')
     try {
-      const data = await fetchData();
-      setPreview(data);
-    } catch (err: any) {
-      toast.error(err.message);
-    } finally {
-      setLoading(null);
-    }
-  };
+      const data = await fetchData()
+      setPreview(data)
+    } catch (err: any) { toast.error(err.message) }
+    finally { setLoading(null) }
+  }
 
   const presets = [
-    { label: "Esta semana", days: 7 },
-    { label: "Este mes", days: 30 },
-    { label: "3 meses", days: 90 },
-    { label: "Este año", days: 365 },
-  ];
+    { label: 'Esta semana', days: 7 },
+    { label: 'Este mes',    days: 30 },
+    { label: '3 meses',     days: 90 },
+    { label: 'Este año',    days: 365 },
+  ]
 
   const applyPreset = (days: number) => {
-    setForm((f) => ({
+    setForm(f => ({
       ...f,
-      startDate: new Date(Date.now() - days * 86400000)
-        .toISOString()
-        .split("T")[0],
-      endDate: new Date().toISOString().split("T")[0],
-    }));
-    setPreview(null);
-  };
+      startDate: new Date(Date.now() - days * 86400000).toISOString().split('T')[0],
+      endDate:   new Date().toISOString().split('T')[0],
+    }))
+    setPreview(null)
+  }
 
   // Estadísticas del preview
-  const stats = previewData
-    ? {
-        total: previewData.length,
-        present: previewData.filter((r) => r["Estado"] === "PRESENT").length,
-        late: previewData.filter((r) => r["Estado"] === "LATE").length,
-        absent: previewData.filter((r) => r["Estado"] === "ABSENT").length,
-      }
-    : null;
+  const stats = previewData ? {
+    total:   previewData.length,
+    present: previewData.filter(r => r['Estado'] === 'PRESENT').length,
+    late:    previewData.filter(r => r['Estado'] === 'LATE').length,
+    absent:  previewData.filter(r => r['Estado'] === 'ABSENT').length,
+  } : null
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="space-y-6 w-full">
       <div>
         <h1 className="text-2xl font-bold text-white">Reportes</h1>
-        <p className="text-gray-400 text-sm mt-1">
-          Exporta registros de asistencia en CSV o PDF
-        </p>
+        <p className="text-gray-400 text-sm mt-1">Exporta registros de asistencia en CSV o PDF</p>
       </div>
 
       <div className="glass rounded-2xl p-6 space-y-5">
         {/* Presets */}
         <div>
-          <p className="text-xs font-medium text-gray-400 mb-2.5">
-            Período rápido
-          </p>
+          <p className="text-xs font-medium text-gray-400 mb-2.5">Período rápido</p>
           <div className="flex flex-wrap gap-2">
-            {presets.map((p) => (
-              <button
-                key={p.label}
-                onClick={() => applyPreset(p.days)}
-                className="px-3 py-1.5 rounded-lg border border-gray-700 text-xs text-gray-400 hover:text-white hover:border-gray-500 hover:bg-gray-800 transition-all"
-              >
+            {presets.map(p => (
+              <button key={p.label} onClick={() => applyPreset(p.days)}
+                className="px-3 py-1.5 rounded-lg border border-gray-700 text-xs text-gray-400 hover:text-white hover:border-gray-500 hover:bg-gray-800 transition-all">
                 {p.label}
               </button>
             ))}
@@ -164,93 +121,50 @@ export default function ReportsPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-medium text-gray-400 mb-2 flex items-center gap-1.5">
-              <Calendar className="w-3.5 h-3.5" />
-              Fecha inicio
+              <Calendar className="w-3.5 h-3.5" />Fecha inicio
             </label>
-            <input
-              type="date"
-              value={form.startDate}
-              onChange={(e) => {
-                setForm((f) => ({ ...f, startDate: e.target.value }));
-                setPreview(null);
-              }}
+            <input type="date" value={form.startDate}
+              onChange={e => { setForm(f => ({ ...f, startDate: e.target.value })); setPreview(null) }}
               className="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all"
             />
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-400 mb-2 flex items-center gap-1.5">
-              <Calendar className="w-3.5 h-3.5" />
-              Fecha fin
+              <Calendar className="w-3.5 h-3.5" />Fecha fin
             </label>
-            <input
-              type="date"
-              value={form.endDate}
-              onChange={(e) => {
-                setForm((f) => ({ ...f, endDate: e.target.value }));
-                setPreview(null);
-              }}
+            <input type="date" value={form.endDate}
+              onChange={e => { setForm(f => ({ ...f, endDate: e.target.value })); setPreview(null) }}
               className="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all"
             />
           </div>
           <div className="sm:col-span-2">
             <label className="block text-xs font-medium text-gray-400 mb-2 flex items-center gap-1.5">
-              <Building2 className="w-3.5 h-3.5" />
-              Departamento
+              <Building2 className="w-3.5 h-3.5" />Departamento
             </label>
-            <select
-              value={form.department}
-              onChange={(e) => {
-                setForm((f) => ({ ...f, department: e.target.value }));
-                setPreview(null);
-              }}
-              className="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all"
-            >
+            <select value={form.department}
+              onChange={e => { setForm(f => ({ ...f, department: e.target.value })); setPreview(null) }}
+              className="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all">
               <option value="">Todos los departamentos</option>
-              {DEPTS.map((d) => (
-                <option key={d} value={d}>
-                  {d}
-                </option>
-              ))}
+              {DEPTS.map(d => <option key={d} value={d}>{d}</option>)}
             </select>
           </div>
         </div>
 
         {/* Botones */}
         <div className="grid grid-cols-3 gap-3 pt-1">
-          <button
-            onClick={handlePreview}
-            disabled={!!loading}
-            className="flex items-center justify-center gap-2 py-3 rounded-xl border border-gray-700 hover:border-gray-500 hover:bg-gray-800 text-gray-300 text-sm font-medium transition-all disabled:opacity-40"
-          >
-            {loading === "preview" ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <FileText className="w-4 h-4" />
-            )}
+          <button onClick={handlePreview} disabled={!!loading}
+            className="flex items-center justify-center gap-2 py-3 rounded-xl border border-gray-700 hover:border-gray-500 hover:bg-gray-800 text-gray-300 text-sm font-medium transition-all disabled:opacity-40">
+            {loading === 'preview' ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
             Vista previa
           </button>
-          <button
-            onClick={handleCSV}
-            disabled={!!loading}
-            className="flex items-center justify-center gap-2 py-3 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/30 text-emerald-400 text-sm font-medium transition-all disabled:opacity-40"
-          >
-            {loading === "csv" ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Download className="w-4 h-4" />
-            )}
+          <button onClick={handleCSV} disabled={!!loading}
+            className="flex items-center justify-center gap-2 py-3 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/30 text-emerald-400 text-sm font-medium transition-all disabled:opacity-40">
+            {loading === 'csv' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
             CSV
           </button>
-          <button
-            onClick={handlePDF}
-            disabled={!!loading}
-            className="flex items-center justify-center gap-2 py-3 rounded-xl bg-red-600/20 hover:bg-red-600/30 border border-red-500/30 text-red-400 text-sm font-medium transition-all disabled:opacity-40"
-          >
-            {loading === "pdf" ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <FileDown className="w-4 h-4" />
-            )}
+          <button onClick={handlePDF} disabled={!!loading}
+            className="flex items-center justify-center gap-2 py-3 rounded-xl bg-red-600/20 hover:bg-red-600/30 border border-red-500/30 text-red-400 text-sm font-medium transition-all disabled:opacity-40">
+            {loading === 'pdf' ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileDown className="w-4 h-4" />}
             PDF
           </button>
         </div>
@@ -261,17 +175,13 @@ export default function ReportsPage() {
         <div className="space-y-4">
           <div className="grid grid-cols-4 gap-3">
             {[
-              { label: "Total", value: stats.total, color: "text-white" },
-              {
-                label: "Presentes",
-                value: stats.present,
-                color: "text-emerald-400",
-              },
-              { label: "Retardos", value: stats.late, color: "text-amber-400" },
-              { label: "Ausentes", value: stats.absent, color: "text-red-400" },
-            ].map((s) => (
+              { label: 'Total',    value: stats.total,   color: 'text-white' },
+              { label: 'Presentes', value: stats.present, color: 'text-emerald-400' },
+              { label: 'Retardos', value: stats.late,    color: 'text-amber-400' },
+              { label: 'Ausentes', value: stats.absent,  color: 'text-red-400' },
+            ].map(s => (
               <div key={s.label} className="glass rounded-xl p-3 text-center">
-                <p className={cn("text-xl font-bold", s.color)}>{s.value}</p>
+                <p className={cn('text-xl font-bold', s.color)}>{s.value}</p>
                 <p className="text-[10px] text-gray-500 mt-0.5">{s.label}</p>
               </div>
             ))}
@@ -280,83 +190,36 @@ export default function ReportsPage() {
           {/* Tabla preview */}
           <div className="glass rounded-2xl overflow-hidden">
             <div className="px-4 py-3 border-b border-gray-800 flex items-center justify-between">
-              <p className="text-xs font-semibold text-white">
-                Vista previa ({previewData!.length} registros)
-              </p>
-              <button
-                onClick={() => setPreview(null)}
-                className="text-xs text-gray-500 hover:text-gray-300"
-              >
-                Cerrar
-              </button>
+              <p className="text-xs font-semibold text-white">Vista previa ({previewData!.length} registros)</p>
+              <button onClick={() => setPreview(null)} className="text-xs text-gray-500 hover:text-gray-300">Cerrar</button>
             </div>
             <div className="overflow-x-auto max-h-72 overflow-y-auto">
               <table className="w-full text-xs">
                 <thead className="sticky top-0 bg-gray-900">
-                  <tr>
-                    {[
-                      "Empleado",
-                      "Depto.",
-                      "Fecha",
-                      "Entrada",
-                      "Salida",
-                      "Estado",
-                      "Retardo",
-                    ].map((h) => (
-                      <th
-                        key={h}
-                        className="px-4 py-2.5 text-left font-semibold text-gray-400 uppercase tracking-wider text-[10px]"
-                      >
-                        {h}
-                      </th>
-                    ))}
-                  </tr>
+                  <tr>{['Empleado','Depto.','Fecha','Entrada','Salida','Estado','Retardo'].map(h => (
+                    <th key={h} className="px-4 py-2.5 text-left font-semibold text-gray-400 uppercase tracking-wider text-[10px]">{h}</th>
+                  ))}</tr>
                 </thead>
                 <tbody className="divide-y divide-gray-800/50">
                   {previewData!.slice(0, 50).map((row, i) => (
-                    <tr
-                      key={i}
-                      className="hover:bg-gray-800/30 transition-colors"
-                    >
-                      <td className="px-4 py-2.5 text-white font-medium">
-                        {row["Empleado"]}
-                      </td>
-                      <td className="px-4 py-2.5 text-gray-400">
-                        {row["Departamento"] || "—"}
-                      </td>
-                      <td className="px-4 py-2.5 text-gray-300 font-mono">
-                        {row["Fecha"]}
-                      </td>
-                      <td className="px-4 py-2.5 text-gray-300 font-mono">
-                        {row["Check-in"]}
-                      </td>
-                      <td className="px-4 py-2.5 text-gray-300 font-mono">
-                        {row["Check-out"]}
-                      </td>
+                    <tr key={i} className="hover:bg-gray-800/30 transition-colors">
+                      <td className="px-4 py-2.5 text-white font-medium">{row['Empleado']}</td>
+                      <td className="px-4 py-2.5 text-gray-400">{row['Departamento'] || '—'}</td>
+                      <td className="px-4 py-2.5 text-gray-300 font-mono">{row['Fecha']}</td>
+                      <td className="px-4 py-2.5 text-gray-300 font-mono">{row['Check-in']}</td>
+                      <td className="px-4 py-2.5 text-gray-300 font-mono">{row['Check-out']}</td>
                       <td className="px-4 py-2.5">
-                        <span
-                          style={{
-                            color: STATUS_COLORS[row["Estado"]] || "#9ca3af",
-                          }}
-                          className="font-medium"
-                        >
-                          {STATUS_LABELS[row["Estado"]] || row["Estado"]}
+                        <span style={{ color: STATUS_COLORS[row['Estado']] || '#9ca3af' }} className="font-medium">
+                          {STATUS_LABELS[row['Estado']] || row['Estado']}
                         </span>
                       </td>
-                      <td className="px-4 py-2.5 text-gray-400">
-                        {row["Retardo (min)"] > 0
-                          ? `${row["Retardo (min)"]} min`
-                          : "—"}
-                      </td>
+                      <td className="px-4 py-2.5 text-gray-400">{row['Retardo (min)'] > 0 ? `${row['Retardo (min)']} min` : '—'}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
               {previewData!.length > 50 && (
-                <p className="px-4 py-3 text-xs text-gray-500 text-center">
-                  Mostrando primeros 50 de {previewData!.length} registros.
-                  Exporta para ver todos.
-                </p>
+                <p className="px-4 py-3 text-xs text-gray-500 text-center">Mostrando primeros 50 de {previewData!.length} registros. Exporta para ver todos.</p>
               )}
             </div>
           </div>
@@ -365,78 +228,48 @@ export default function ReportsPage() {
 
       {/* Campos incluidos */}
       <div className="glass rounded-2xl p-5">
-        <p className="text-xs font-semibold text-white mb-3">
-          Campos incluidos en el reporte
-        </p>
+        <p className="text-xs font-semibold text-white mb-3">Campos incluidos en el reporte</p>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-          {[
-            "Empleado",
-            "Email",
-            "Departamento",
-            "Cargo",
-            "Fecha",
-            "Check-in",
-            "Check-out",
-            "Estado",
-            "Retardo (min)",
-            "Notas",
-          ].map((f) => (
-            <div
-              key={f}
-              className="flex items-center gap-1.5 text-xs text-gray-400"
-            >
-              <span className="w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0" />
-              {f}
+          {['Empleado','Email','Departamento','Cargo','Fecha','Check-in','Check-out','Estado','Retardo (min)','Notas'].map(f => (
+            <div key={f} className="flex items-center gap-1.5 text-xs text-gray-400">
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0" />{f}
             </div>
           ))}
         </div>
       </div>
     </div>
-  );
+  )
 }
 
 // ── Generador de PDF ──────────────────────────────────────────────
-function generatePDF(
-  data: any[],
-  form: { startDate: string; endDate: string; department: string },
-) {
-  const title = "Reporte de Asistencia";
-  const period = `${form.startDate} — ${form.endDate}`;
-  const dept = form.department || "Todos los departamentos";
-  const genDate = format(new Date(), "d 'de' MMMM yyyy, HH:mm", { locale: es });
+function generatePDF(data: any[], form: { startDate: string; endDate: string; department: string }) {
+  const title   = 'Reporte de Asistencia'
+  const period  = `${form.startDate} — ${form.endDate}`
+  const dept    = form.department || 'Todos los departamentos'
+  const genDate = format(new Date(), "d 'de' MMMM yyyy, HH:mm", { locale: es })
 
   // Estadísticas
-  const total = data.length;
-  const present = data.filter((r) => r["Estado"] === "PRESENT").length;
-  const late = data.filter((r) => r["Estado"] === "LATE").length;
-  const absent = data.filter((r) => r["Estado"] === "ABSENT").length;
-  const rate = total > 0 ? Math.round(((present + late) / total) * 100) : 0;
+  const total   = data.length
+  const present = data.filter(r => r['Estado'] === 'PRESENT').length
+  const late    = data.filter(r => r['Estado'] === 'LATE').length
+  const absent  = data.filter(r => r['Estado'] === 'ABSENT').length
+  const rate    = total > 0 ? Math.round(((present + late) / total) * 100) : 0
 
   // Construir HTML del PDF
-  const rowsHtml = data
-    .map((r, i) => {
-      const statusColor =
-        (
-          {
-            PRESENT: "#34d399",
-            LATE: "#fbbf24",
-            ABSENT: "#f87171",
-            HALF_DAY: "#60a5fa",
-          } as any
-        )[r["Estado"]] || "#9ca3af";
-      const statusLabel = STATUS_LABELS[r["Estado"]] || r["Estado"];
-      return `
-      <tr style="background:${i % 2 === 0 ? "#111827" : "#0f172a"}">
-        <td>${r["Empleado"]}</td>
-        <td>${r["Departamento"] || "—"}</td>
-        <td style="font-family:monospace">${r["Fecha"]}</td>
-        <td style="font-family:monospace">${r["Check-in"]}</td>
-        <td style="font-family:monospace">${r["Check-out"]}</td>
+  const rowsHtml = data.map((r, i) => {
+    const statusColor = ({ PRESENT: '#34d399', LATE: '#fbbf24', ABSENT: '#f87171', HALF_DAY: '#60a5fa' } as any)[r['Estado']] || '#9ca3af'
+    const statusLabel = STATUS_LABELS[r['Estado']] || r['Estado']
+    return `
+      <tr style="background:${i % 2 === 0 ? '#111827' : '#0f172a'}">
+        <td>${r['Empleado']}</td>
+        <td>${r['Departamento'] || '—'}</td>
+        <td style="font-family:monospace">${r['Fecha']}</td>
+        <td style="font-family:monospace">${r['Check-in']}</td>
+        <td style="font-family:monospace">${r['Check-out']}</td>
         <td><span style="color:${statusColor};font-weight:600">${statusLabel}</span></td>
-        <td style="text-align:center">${r["Retardo (min)"] > 0 ? `${r["Retardo (min)"]} min` : "—"}</td>
-      </tr>`;
-    })
-    .join("");
+        <td style="text-align:center">${r['Retardo (min)'] > 0 ? `${r['Retardo (min)']} min` : '—'}</td>
+      </tr>`
+  }).join('')
 
   const html = `<!DOCTYPE html>
 <html lang="es">
@@ -516,19 +349,16 @@ function generatePDF(
   </table>
 </div>
 <div class="footer">AccessFlow — Reporte generado automáticamente el ${genDate} · Confidencial</div>
-</body></html>`;
+</body></html>`
 
-  const win = window.open("", "_blank", "width=1100,height=800");
-  if (!win) {
-    toast.error("Permite las ventanas emergentes para generar el PDF");
-    return;
-  }
-  win.document.write(html);
-  win.document.close();
+  const win = window.open('', '_blank', 'width=1100,height=800')
+  if (!win) { toast.error('Permite las ventanas emergentes para generar el PDF'); return }
+  win.document.write(html)
+  win.document.close()
   win.onload = () => {
     setTimeout(() => {
-      win.focus();
-      win.print();
-    }, 500);
-  };
+      win.focus()
+      win.print()
+    }, 500)
+  }
 }

@@ -9,7 +9,7 @@ export default function AttendancePage() {
   if (!session) return null
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 w-full">
       <div>
         <h1 className="text-2xl font-bold text-white">Registro de Asistencia</h1>
         <p className="text-gray-400 text-sm mt-1">Registra tu entrada y salida del día</p>

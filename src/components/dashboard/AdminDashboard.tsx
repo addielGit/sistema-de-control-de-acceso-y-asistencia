@@ -38,7 +38,7 @@ export function AdminDashboard() {
   if (!stats) return <p className="text-gray-500 text-center py-12">Error cargando datos</p>
 
   return (
-    <div className="space-y-6 max-w-7xl">
+    <div className="space-y-6 w-full">
       <div>
         <h1 className="text-2xl font-bold text-white">Dashboard</h1>
         <p className="text-gray-400 text-sm mt-1">Resumen de asistencia de hoy</p>
@@ -142,7 +142,7 @@ export function AdminDashboard() {
 
 function DashboardSkeleton() {
   return (
-    <div className="space-y-6 max-w-7xl">
+    <div className="space-y-6 w-full">
       <div className="h-8 w-48 skeleton rounded-xl" />
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         {Array.from({ length: 4 }).map((_, i) => (

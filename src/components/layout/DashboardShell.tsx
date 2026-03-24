@@ -371,10 +371,10 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   return (
     <div
       className="flex-1 min-w-0 flex flex-col"
-      style={{ overflow: 'hidden' }}
+      style={{ overflow: 'hidden', minWidth: 0 }}
     >
       <AppHeader />
-      <main className="flex-1 overflow-y-auto p-4 lg:p-6">
+      <main className="flex-1 overflow-y-auto p-4 lg:p-6 w-full min-w-0">
         {children}
       </main>
     </div>
