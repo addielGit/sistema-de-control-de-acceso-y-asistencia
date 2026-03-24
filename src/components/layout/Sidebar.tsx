@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard, Users, Clock, FileText,
-  Shield, ChevronLeft, LogOut, History, Settings, Palette, Bell,
+  Shield, ChevronLeft, LogOut, History, Settings, Palette, Bell, ServerCog,
 } from 'lucide-react'
 import { signOut } from 'next-auth/react'
 import { cn } from '@/lib/utils'
@@ -21,6 +21,7 @@ const NAV = [
   { href: '/dashboard/audit',      label: 'Auditoría',     icon: Shield,          admin: true  },
   { href: '/dashboard/settings',   label: 'Configuración', icon: Settings,        admin: true  },
   { href: '/dashboard/appearance',  label: 'Apariencia',    icon: Palette,         admin: false },
+  { href: '/dashboard/system',        label: 'Sistema',       icon: ServerCog,       admin: true  },
 ]
 
 export function Sidebar({ role }: { role: string }) {
