@@ -78,10 +78,19 @@ function NotificationPanel() {
   const [pStyle, setPStyle] = useState<React.CSSProperties>({});
   const [mounted, setMounted] = useState(false);
   const btnRef = useRef<HTMLButtonElement>(null);
+  const router = useRouter();
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Close panel and remember it was closed this session
+  const handleClose = () => {
+    setOpen(false);
+    try {
+      sessionStorage.setItem("notif-panel-closed", "1");
+    } catch {}
+  };
 
   const calcPos = useCallback(() => {
     if (!btnRef.current) return;
@@ -233,7 +242,7 @@ function NotificationPanel() {
             </button>
           )}
           <button
-            onClick={() => setOpen(false)}
+            onClick={handleClose}
             className="flex items-center justify-center text-gray-400 hover:text-white transition-all p-1"
           >
             <X className="w-3.5 h-3.5" />
@@ -264,6 +273,7 @@ function NotificationPanel() {
                     onRead={markOne}
                     onDel={del}
                     acting={acting}
+                    onClose={handleClose}
                   />
                 ))}
               </>
@@ -280,6 +290,7 @@ function NotificationPanel() {
                     onRead={markOne}
                     onDel={del}
                     acting={acting}
+                    onClose={handleClose}
                   />
                 ))}
               </>
@@ -296,8 +307,14 @@ function NotificationPanel() {
         ref={btnRef}
         onClick={() => {
           const next = !open;
+          if (next) {
+            // User explicitly opened — clear dismissed state
+            try {
+              sessionStorage.removeItem("notif-panel-closed");
+            } catch {}
+            load();
+          }
           setOpen(next);
-          if (next) load();
         }}
         className={cn(
           "relative flex items-center justify-center transition-all p-1",
@@ -321,11 +338,13 @@ function NRow({
   onRead,
   onDel,
   acting,
+  onClose,
 }: {
   n: Notif;
   onRead: (id: string) => void;
   onDel: (id: string) => void;
   acting: string | null;
+  onClose: () => void;
 }) {
   const cfg = NOTIF_CFG[n.type] || NOTIF_CFG.INFO;
   const Icon = cfg.icon;
@@ -333,9 +352,15 @@ function NRow({
     addSuffix: true,
     locale: es,
   });
+  const router = useRouter();
+  const handleClick = () => {
+    if (!n.isRead) onRead(n.id);
+    router.push("/dashboard/notifications");
+    onClose();
+  };
   return (
     <div
-      onClick={() => !n.isRead && onRead(n.id)}
+      onClick={handleClick}
       className={cn(
         "group flex gap-3 px-4 py-3 transition-colors cursor-pointer",
         n.isRead
