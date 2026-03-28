@@ -193,9 +193,12 @@ export default function SystemPage() {
         // No Content-Type header — browser sets it automatically with boundary
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error)
+      if (!res.ok) throw new Error(data.error || data.details || 'Error al restaurar')
       setPendingFile(null)
-      return { message: data.message, detail: data.restored }
+      const detail: Record<string,any> = { ...(data.restored || {}) }
+      if (data.meta?.backupDate) detail['Backup de'] = new Date(data.meta.backupDate).toLocaleDateString('es')
+      if (data.errors?.length)   detail['⚠ Errores'] = data.errors.length
+      return { message: data.message, detail }
     })
   }
 
