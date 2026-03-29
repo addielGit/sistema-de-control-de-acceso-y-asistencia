@@ -1,6 +1,7 @@
 // src/app/dashboard/reports/page.tsx
 'use client'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import { Download, FileText, Loader2, Calendar, Building2, FileDown, User, ChevronDown, X } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { cn } from '@/lib/utils'
@@ -29,19 +30,50 @@ function EmployeePicker({
   const [open, setOpen]       = useState(false)
   const [search, setSearch]   = useState('')
   const [employees, setEmps]  = useState<Employee[]>([])
+  const [mounted, setMounted] = useState(false)
+  const [menuStyle, setMenuStyle] = useState<React.CSSProperties>({})
   const ref                   = useRef<HTMLDivElement>(null)
+  const btnRef                = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
-    fetch('/api/users?limit=200&role=EMPLOYEE')
+    setMounted(true)
+    fetch('/api/users?limit=200')
       .then(r => r.json())
-      .then(d => setEmps(d.data || []))
+      .then(d => setEmps((d.data || []).filter((e:any) => e.role !== 'ADMIN')))
       .catch(() => {})
+  }, [])
+
+  const calcPos = useCallback(() => {
+    if (!btnRef.current) return
+    const r   = btnRef.current.getBoundingClientRect()
+    const w   = Math.max(r.width, 280)
+    const ww  = window.innerWidth
+    const wh  = window.innerHeight
+    const top = r.bottom + 4
+    // Flip up if not enough space below
+    const finalTop = top + 220 > wh ? r.top - 220 - 4 : top
+    let left = r.left
+    if (left + w > ww - 8) left = ww - w - 8
+    setMenuStyle({ position:'fixed', top:finalTop, left, width:w, zIndex:99999 })
   }, [])
 
   useEffect(() => {
     if (!open) return
+    calcPos()
+    window.addEventListener('resize', calcPos)
+    window.addEventListener('scroll', calcPos, true)
+    return () => {
+      window.removeEventListener('resize', calcPos)
+      window.removeEventListener('scroll', calcPos, true)
+    }
+  }, [open, calcPos])
+
+  useEffect(() => {
+    if (!open) return
     const h = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+      const t = e.target as Node
+      if (btnRef.current?.contains(t)) return
+      if (!document.getElementById('emp-picker-portal')?.contains(t)) setOpen(false)
     }
     document.addEventListener('mousedown', h)
     return () => document.removeEventListener('mousedown', h)
@@ -54,98 +86,69 @@ function EmployeePicker({
     (e.department || '').toLowerCase().includes(search.toLowerCase())
   )
 
+  const menu = (
+    <div id="emp-picker-portal" style={menuStyle}
+      className="bg-gray-900 border border-gray-700 rounded-xl shadow-2xl overflow-hidden">
+      <div className="p-2 border-b border-gray-800">
+        <input autoFocus type="text" placeholder="Buscar por nombre, email o departamento..."
+          value={search} onChange={e => setSearch(e.target.value)}
+          className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+        />
+      </div>
+      <div className="overflow-y-auto max-h-52">
+        <button onClick={() => { onChange(null); setOpen(false) }}
+          className={cn('w-full flex items-center gap-3 px-3 py-2.5 text-sm transition-colors hover:bg-gray-800 text-left',
+            !value ? 'text-blue-400 bg-blue-500/5' : 'text-gray-400')}>
+          <span className="w-7 h-7 rounded-full bg-gray-700 flex items-center justify-center text-xs text-gray-400 shrink-0">—</span>
+          <div><p className="font-medium">Todos los empleados</p><p className="text-xs text-gray-500">Sin filtrar por persona</p></div>
+        </button>
+        {filtered.map(emp => (
+          <button key={emp.id} onClick={() => { onChange(emp); setOpen(false); setSearch('') }}
+            className={cn('w-full flex items-center gap-3 px-3 py-2.5 text-sm transition-colors hover:bg-gray-800 text-left',
+              value?.id === emp.id ? 'text-blue-400 bg-blue-500/5' : 'text-gray-300')}>
+            <span className="w-7 h-7 rounded-full bg-blue-500/20 border border-blue-500/30 flex items-center justify-center text-xs font-bold text-blue-400 shrink-0">
+              {emp.name[0]}
+            </span>
+            <div className="min-w-0">
+              <p className="font-medium truncate">{emp.name}</p>
+              <p className="text-xs text-gray-500 truncate">{emp.department || emp.email}</p>
+            </div>
+            {value?.id === emp.id && <span className="ml-auto text-blue-400 shrink-0">✓</span>}
+          </button>
+        ))}
+        {filtered.length === 0 && <p className="px-4 py-5 text-xs text-gray-500 text-center">Sin resultados para "{search}"</p>}
+      </div>
+    </div>
+  )
+
   return (
-    <div ref={ref} className="relative">
-      <button
-        type="button"
-        disabled={disabled}
+    <div ref={ref}>
+      <button ref={btnRef} type="button" disabled={disabled}
         onClick={() => { setOpen(o => !o); setSearch('') }}
         className={cn(
           'w-full flex items-center justify-between gap-2 px-4 py-2.5 rounded-xl border text-sm transition-all text-left',
           'bg-gray-900 border-gray-700 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20',
           'disabled:opacity-40 disabled:cursor-not-allowed',
           open && 'border-blue-500 ring-1 ring-blue-500/20'
-        )}
-      >
+        )}>
         {value ? (
           <div className="flex items-center gap-2 min-w-0">
-            <span className="w-5 h-5 rounded-full bg-blue-500/20 text-blue-400 text-[10px] font-bold flex items-center justify-center shrink-0">
-              {value.name[0]}
-            </span>
+            <span className="w-5 h-5 rounded-full bg-blue-500/20 text-blue-400 text-[10px] font-bold flex items-center justify-center shrink-0">{value.name[0]}</span>
             <span className="text-white truncate">{value.name}</span>
             {value.department && <span className="text-gray-500 text-xs truncate hidden sm:block">· {value.department}</span>}
           </div>
-        ) : (
-          <span className="text-gray-500">Todos los empleados</span>
-        )}
+        ) : <span className="text-gray-500">Todos los empleados</span>}
         <div className="flex items-center gap-1.5 shrink-0">
           {value && (
-            <span
-              role="button"
-              onClick={e => { e.stopPropagation(); onChange(null) }}
-              className="w-4 h-4 rounded-full flex items-center justify-center text-gray-500 hover:text-white hover:bg-gray-700 transition-all"
-            >
+            <span role="button" onClick={e => { e.stopPropagation(); onChange(null) }}
+              className="w-4 h-4 rounded-full flex items-center justify-center text-gray-500 hover:text-white hover:bg-gray-700 transition-all">
               <X className="w-2.5 h-2.5" />
             </span>
           )}
           <ChevronDown className={cn('w-3.5 h-3.5 text-gray-400 transition-transform', open && 'rotate-180')} />
         </div>
       </button>
-
-      {open && (
-        <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-gray-900 border border-gray-700 rounded-xl shadow-2xl overflow-hidden">
-          <div className="p-2 border-b border-gray-800">
-            <input
-              autoFocus
-              type="text"
-              placeholder="Buscar por nombre, email o departamento..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
-            />
-          </div>
-          <div className="overflow-y-auto max-h-48">
-            {/* Opción "todos" */}
-            <button
-              onClick={() => { onChange(null); setOpen(false) }}
-              className={cn(
-                'w-full flex items-center gap-3 px-3 py-2.5 text-sm transition-colors hover:bg-gray-800 text-left',
-                !value ? 'text-blue-400 bg-blue-500/5' : 'text-gray-400'
-              )}
-            >
-              <span className="w-7 h-7 rounded-full bg-gray-700 flex items-center justify-center text-xs text-gray-400 shrink-0">—</span>
-              <div>
-                <p className="font-medium">Todos los empleados</p>
-                <p className="text-xs text-gray-500">Sin filtrar por persona</p>
-              </div>
-            </button>
-
-            {filtered.map(emp => (
-              <button
-                key={emp.id}
-                onClick={() => { onChange(emp); setOpen(false); setSearch('') }}
-                className={cn(
-                  'w-full flex items-center gap-3 px-3 py-2.5 text-sm transition-colors hover:bg-gray-800 text-left',
-                  value?.id === emp.id ? 'text-blue-400 bg-blue-500/5' : 'text-gray-300'
-                )}
-              >
-                <span className="w-7 h-7 rounded-full bg-blue-500/20 border border-blue-500/30 flex items-center justify-center text-xs font-bold text-blue-400 shrink-0">
-                  {emp.name[0]}
-                </span>
-                <div className="min-w-0">
-                  <p className="font-medium truncate">{emp.name}</p>
-                  <p className="text-xs text-gray-500 truncate">{emp.department || emp.email}</p>
-                </div>
-                {value?.id === emp.id && <span className="ml-auto text-blue-400 shrink-0">✓</span>}
-              </button>
-            ))}
-
-            {filtered.length === 0 && (
-              <p className="px-4 py-5 text-xs text-gray-500 text-center">Sin resultados para "{search}"</p>
-            )}
-          </div>
-        </div>
-      )}
+      {mounted && open && createPortal(menu, document.body)}
     </div>
   )
 }
