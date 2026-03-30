@@ -1,5 +1,6 @@
 // src/components/attendance/AdminMarkModal.tsx
 'use client'
+import { useI18n } from '@/lib/i18n-context'
 import { useState, useEffect } from 'react'
 import { Modal } from '@/components/ui/Modal'
 import { Loader2, LogIn, LogOut, Clock, AlertTriangle, CheckCircle } from 'lucide-react'
@@ -22,6 +23,7 @@ interface AdminMarkModalProps {
 }
 
 export function AdminMarkModal({ open, onClose, user }: AdminMarkModalProps) {
+  const { t } = useI18n()
   const [todayStatus, setTodayStatus] = useState<TodayStatus | null>(null)
   const [loadingStatus, setLoadingStatus]   = useState(false)
   const [saving, setSaving]                 = useState(false)
@@ -90,7 +92,7 @@ export function AdminMarkModal({ open, onClose, user }: AdminMarkModalProps) {
   }
 
   return (
-    <Modal open={open} onClose={onClose} title="Marcaje manual" size="md">
+    <Modal open={open} onClose={onClose} title={t('mark.title')} size="md">
       {/* Info del empleado */}
       <div className="flex items-center gap-3 p-3 bg-gray-900/60 rounded-xl border border-gray-800 mb-5">
         <div className="w-10 h-10 rounded-full bg-blue-500/20 border border-blue-500/30 flex items-center justify-center text-blue-400 font-semibold text-sm shrink-0">
@@ -123,7 +125,7 @@ export function AdminMarkModal({ open, onClose, user }: AdminMarkModalProps) {
           <div className="w-12 h-12 rounded-full bg-blue-500/20 border border-blue-500/30 flex items-center justify-center">
             <CheckCircle className="w-6 h-6 text-blue-400" />
           </div>
-          <p className="text-sm font-medium text-white">Jornada completa registrada</p>
+          <p className="text-sm font-medium text-white">{t('mark.fullDay')}</p>
           <div className="flex gap-4 text-xs text-gray-400">
             <span>Entrada: <span className="text-white font-mono">{formatTime(new Date(todayStatus!.checkIn!))}</span></span>
             <span>Salida: <span className="text-white font-mono">{formatTime(new Date(todayStatus!.checkOut!))}</span></span>
@@ -134,13 +136,13 @@ export function AdminMarkModal({ open, onClose, user }: AdminMarkModalProps) {
           {/* Estado actual */}
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-gray-900/60 rounded-xl p-3 text-center border border-gray-800">
-              <p className="text-xs text-gray-500 mb-1">Entrada</p>
+              <p className="text-xs text-gray-500 mb-1">{t('mark.entry')}</p>
               <p className={cn('text-sm font-mono font-semibold', checkedIn ? 'text-emerald-400' : 'text-gray-600')}>
                 {checkedIn ? formatTime(new Date(todayStatus!.checkIn!)) : 'Sin registrar'}
               </p>
             </div>
             <div className="bg-gray-900/60 rounded-xl p-3 text-center border border-gray-800">
-              <p className="text-xs text-gray-500 mb-1">Salida</p>
+              <p className="text-xs text-gray-500 mb-1">{t('mark.exit')}</p>
               <p className={cn('text-sm font-mono font-semibold', checkedOut ? 'text-orange-400' : 'text-gray-600')}>
                 {checkedOut ? formatTime(new Date(todayStatus!.checkOut!)) : 'Sin registrar'}
               </p>
@@ -160,8 +162,8 @@ export function AdminMarkModal({ open, onClose, user }: AdminMarkModalProps) {
             }
             <p className={cn('text-xs font-medium', actionType === 'ENTRY' ? 'text-emerald-300' : 'text-orange-300')}>
               {actionType === 'ENTRY'
-                ? 'Se registrará una ENTRADA manual para hoy'
-                : 'Se registrará una SALIDA manual para hoy'}
+                ? t('mark.action')
+                : t('mark.actionExit')}
             </p>
           </div>
 

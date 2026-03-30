@@ -1,5 +1,6 @@
 // src/app/dashboard/audit/page.tsx
 'use client'
+import { useI18n } from '@/lib/i18n-context'
 import { useEffect, useState, useCallback } from 'react'
 import { DataTable } from '@/components/ui/DataTable'
 import { formatDateTime } from '@/lib/utils'
@@ -23,6 +24,7 @@ const ACTION_COLORS: Record<string, string> = {
 }
 
 export default function AuditPage() {
+  const { t } = useI18n()
   const [logs, setLogs] = useState<AuditLog[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
@@ -79,7 +81,7 @@ export default function AuditPage() {
             <Shield className="w-5 h-5 text-violet-400" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-white">Auditoría</h1>
+            <h1 className="text-2xl font-bold text-white">{t('audit.title')}</h1>
             <p className="text-gray-400 text-sm">{total} eventos registrados</p>
           </div>
         </div>
@@ -97,7 +99,7 @@ export default function AuditPage() {
         page={page}
         limit={20}
         onPageChange={setPage}
-        emptyMessage="No hay eventos de auditoría"
+        emptyMessage={t('audit.noEvents')}
       />
     </div>
   )

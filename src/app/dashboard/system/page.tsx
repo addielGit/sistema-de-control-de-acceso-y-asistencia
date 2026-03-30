@@ -1,5 +1,6 @@
 // src/app/dashboard/system/page.tsx
 'use client'
+import { useI18n } from '@/lib/i18n-context'
 import { useRef, useState } from 'react'
 import {
   Database, Download, Upload, Trash2, Loader2, CheckCircle,
@@ -129,6 +130,7 @@ function SectionCard({ icon: Icon, iconColor, title, description, children }: {
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 export default function SystemPage() {
+  const { t, locale } = useI18n()
   const fileRef = useRef<HTMLInputElement>(null)
 
   const backup  = useAction()
@@ -235,7 +237,7 @@ export default function SystemPage() {
       <div className="flex items-center gap-3">
         <Shield className="w-6 h-6" style={{ color: 'var(--accent-text)' }} />
         <div>
-          <h1 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>Administración del sistema</h1>
+          <h1 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>{t('system.title')}</h1>
           <p className="text-sm mt-0.5" style={{ color: 'var(--text-secondary)' }}>
             Backup, restauración y gestión de datos — solo administradores
           </p>
@@ -292,7 +294,7 @@ export default function SystemPage() {
                 : <><RefreshCw className="w-4 h-4" /> Crear datos de prueba</>}
             </button>
             <div className="rounded-xl p-3" style={{ backgroundColor: 'var(--bg-input)' }}>
-              <p className="text-xs font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>Se crearán:</p>
+              <p className="text-xs font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>{locale === 'es' ? 'Se crearán:' : 'Will be created:'}</p>
               <div className="text-xs space-y-0.5" style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
                 <p>admin@accessflow.com / admin123</p>
                 <p>maria@accessflow.com / employee123</p>
@@ -312,7 +314,7 @@ export default function SystemPage() {
           <div className="space-y-3">
             {/* Demo only */}
             <div className="rounded-xl p-4" style={{ backgroundColor: 'var(--bg-input)', border: '1px solid var(--border-muted)' }}>
-              <p className="text-sm font-medium mb-1" style={{ color: 'var(--text-primary)' }}>Solo datos de prueba</p>
+              <p className="text-sm font-medium mb-1" style={{ color: 'var(--text-primary)' }}>{t('system.onlyDemo')}</p>
               <p className="text-xs mb-3" style={{ color: 'var(--text-secondary)' }}>
                 Elimina únicamente los 6 usuarios demo y toda su información asociada (asistencias, logs, notificaciones).
               </p>
@@ -328,7 +330,7 @@ export default function SystemPage() {
 
             {/* Everything */}
             <div className="rounded-xl p-4" style={{ backgroundColor: 'rgba(239,68,68,0.05)', border: '1px solid rgba(239,68,68,0.2)' }}>
-              <p className="text-sm font-medium mb-1 text-red-400">Limpiar todo</p>
+              <p className="text-sm font-medium mb-1 text-red-400">{t('system.clearAll2')}</p>
               <p className="text-xs mb-3" style={{ color: 'var(--text-secondary)' }}>
                 Elimina TODOS los usuarios (excepto tu sesión actual), asistencias, logs y notificaciones. Solo tú permanecerás en el sistema.
               </p>

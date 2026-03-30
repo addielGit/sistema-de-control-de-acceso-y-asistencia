@@ -1,5 +1,6 @@
 // src/app/dashboard/users/page.tsx
 'use client'
+import { useI18n } from '@/lib/i18n-context'
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { createPortal }        from 'react-dom'
 import { DataTable }           from '@/components/ui/DataTable'
@@ -94,6 +95,7 @@ function EditRecordModal({
   onClose: () => void
   onSaved: (updated: AttendanceRecord) => void
 }) {
+  const { t } = useI18n()
   const [checkIn,  setCheckIn]  = useState<string | null>(null)
   const [checkOut, setCheckOut] = useState<string | null>(null)
   const [status,   setStatus]   = useState<AttendanceStatus>('PRESENT')
@@ -152,7 +154,7 @@ function EditRecordModal({
   const dateLabel = formatDate(record.date)
 
   return (
-    <Modal open={!!record} onClose={onClose} title="Editar registro" size="sm">
+    <Modal open={!!record} onClose={onClose} title={t('users.editRecord')} size="sm">
       <div className="space-y-4">
         {/* Date header */}
         <div className="flex items-center justify-between p-3 rounded-xl bg-gray-900/60 border border-gray-800">
@@ -168,7 +170,7 @@ function EditRecordModal({
 
         {/* Status */}
         <div>
-          <label className="text-[10px] font-medium text-gray-400 uppercase tracking-wider mb-1.5 block">Estado</label>
+          <label className="text-[10px] font-medium text-gray-400 uppercase tracking-wider mb-1.5 block">{t('users.status')}</label>
           <div className="grid grid-cols-2 gap-2">
             {STATUS_OPTS.map(o => (
               <button key={o.value} onClick={() => setStatus(o.value)}
@@ -188,7 +190,7 @@ function EditRecordModal({
 
         {/* Notes */}
         <div>
-          <label className="text-[10px] font-medium text-gray-400 uppercase tracking-wider mb-1.5 block">Notas</label>
+          <label className="text-[10px] font-medium text-gray-400 uppercase tracking-wider mb-1.5 block">{t('users.notes')}</label>
           <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2}
             placeholder="Motivo del cambio o notas adicionales..."
             className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 resize-none"
@@ -217,10 +219,10 @@ function EditRecordModal({
               confirm ? 'bg-amber-600 hover:bg-amber-500 text-white' : 'bg-blue-600 hover:bg-blue-500 text-white'
             )}>
             {saving
-              ? <><Loader2 className="w-4 h-4 animate-spin" />Guardando...</>
+              ? <><Loader2 className="w-4 h-4 animate-spin" />{t('action.saving')}</>
               : confirm
-                ? <><Check className="w-4 h-4" />Confirmar</>
-                : <><Save className="w-4 h-4" />Guardar cambios</>}
+                ? <><Check className="w-4 h-4" />{t('action.confirm')}</>
+                : <><Save className="w-4 h-4" />{t('action.save')}</>}
           </button>
         </div>
       </div>
@@ -230,6 +232,7 @@ function EditRecordModal({
 
 // ── History Modal ──────────────────────────────────────────────────────────────
 function HistoryModal({ user, open, onClose }: { user: User | null; open: boolean; onClose: () => void }) {
+  const { t, locale } = useI18n()
   const [records, setRecords] = useState<AttendanceRecord[]>([])
   const [total, setTotal]     = useState(0)
   const [page, setPage]       = useState(1)
@@ -284,7 +287,7 @@ function HistoryModal({ user, open, onClose }: { user: User | null; open: boolea
         ) : records.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 gap-3">
             <History className="w-10 h-10 text-gray-700" />
-            <p className="text-sm text-gray-500">Sin registros de asistencia</p>
+            <p className="text-sm text-gray-500">{t('users.noHistory')}</p>
           </div>
         ) : (
           <>
@@ -331,7 +334,7 @@ function HistoryModal({ user, open, onClose }: { user: User | null; open: boolea
                     {/* Edit button — visible on hover */}
                     <button
                       onClick={() => setEditRec(r)}
-                      title="Editar registro"
+                      title={t('users.editRecord')}
                       className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity p-1 text-gray-500 hover:text-blue-400"
                     >
                       <Pencil className="w-3.5 h-3.5" />
@@ -368,6 +371,7 @@ function HistoryModal({ user, open, onClose }: { user: User | null; open: boolea
 
 // ── Main page ──────────────────────────────────────────────────────────────────
 export default function UsersPage() {
+  const { t } = useI18n()
   const [users, setUsers]           = useState<User[]>([])
   const [total, setTotal]           = useState(0)
   const [page, setPage]             = useState(1)
@@ -411,7 +415,7 @@ export default function UsersPage() {
       const res  = await fetch(url, { method: editUser ? 'PATCH':'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Error')
-      toast.success(editUser ? 'Usuario actualizado' : 'Usuario creado')
+      toast.success(editUser ? t('users.updated') : t('users.created'))
       setShowCreate(false); fetchUsers()
     } catch (err: any) { toast.error(err.message) }
     finally { setSaving(false) }
@@ -419,14 +423,14 @@ export default function UsersPage() {
 
   const toggleActive = async (u: User) => {
     const res = await fetch(`/api/users/${u.id}`, { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ isActive:!u.isActive }) })
-    if (res.ok) { toast.success(`Usuario ${u.isActive?'desactivado':'activado'}`); fetchUsers() }
+    if (res.ok) { toast.success(u.isActive ? t('users.deactivated') : t('users.activated')); fetchUsers() }
   }
 
   const columns = [
     {
       key: 'name', header: 'Empleado',
       render: (u: User) => (
-        <button onClick={() => setHistUser(u)} title="Ver historial"
+        <button onClick={() => setHistUser(u)} title={t('users.viewHistory')}
           className="flex items-center gap-3 group text-left hover:opacity-80 transition-opacity">
           <div className="w-8 h-8 rounded-full bg-blue-500/20 border border-blue-500/30 flex items-center justify-center text-xs font-bold text-blue-400 shrink-0">
             {u.name[0]}
@@ -453,17 +457,17 @@ export default function UsersPage() {
       key:'actions', header:'',
       render:(u:User)=>(
         <div className="flex items-center gap-1.5 justify-end">
-          <button onClick={()=>setHistUser(u)} title="Ver historial"
+          <button onClick={()=>setHistUser(u)} title={t('users.viewHistory')}
             className="flex items-center justify-center text-gray-400 hover:text-blue-400 transition-all p-1">
             <History className="w-3.5 h-3.5" />
           </button>
           {u.isActive && u.role!=='ADMIN' && (
-            <button onClick={()=>setMarkUser(u)} title="Marcaje manual"
+            <button onClick={()=>setMarkUser(u)} title={t('users.manualMark')}
               className="flex items-center justify-center text-blue-400 hover:text-blue-300 transition-all p-1">
               <ClipboardCheck className="w-3.5 h-3.5" />
             </button>
           )}
-          <button onClick={()=>openEdit(u)} title="Editar"
+          <button onClick={()=>openEdit(u)} title={t('action.edit')}
             className="flex items-center justify-center text-gray-400 hover:text-white transition-all p-1">
             <Pencil className="w-3.5 h-3.5" />
           </button>
@@ -480,7 +484,7 @@ export default function UsersPage() {
     <div className="space-y-6 w-full">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Empleados</h1>
+          <h1 className="text-2xl font-bold text-white">{t('users.title')}</h1>
           <p className="text-gray-400 text-sm mt-1">{total} empleados registrados</p>
         </div>
         <button onClick={openCreate}
@@ -497,7 +501,7 @@ export default function UsersPage() {
             className="w-full bg-gray-900 border border-gray-700 rounded-xl pl-9 pr-3 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
           />
         </div>
-        <p className="text-xs text-gray-600 mt-2">Haz clic en el nombre del empleado para ver su historial.</p>
+        <p className="text-xs text-gray-600 mt-2">{t('users.clickHistory')}</p>
       </div>
 
       <DataTable columns={columns} data={users} loading={loading} total={total} page={page} limit={15} onPageChange={setPage} />
@@ -524,7 +528,7 @@ export default function UsersPage() {
             <label className="block text-xs font-medium text-gray-400 mb-1.5">Departamento</label>
             <select value={form.department} onChange={e=>setForm(p=>({...p,department:e.target.value}))}
               className="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500">
-              <option value="">Sin departamento</option>
+              <option value="">{t('users.noDept')}</option>
               {DEPTS.map(d=><option key={d} value={d}>{d}</option>)}
             </select>
           </div>

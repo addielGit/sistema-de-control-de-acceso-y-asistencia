@@ -1,5 +1,6 @@
 // src/app/dashboard/settings/page.tsx
 'use client'
+import { useI18n } from '@/lib/i18n-context'
 import { useEffect, useState } from 'react'
 import { Settings, Clock, Calendar, Plus, Trash2, Loader2, Save, RotateCcw } from 'lucide-react'
 import toast from 'react-hot-toast'
@@ -34,6 +35,7 @@ const DEFAULT: Config = {
 }
 
 export default function SettingsPage() {
+  const { t } = useI18n()
   const [config, setConfig] = useState<Config>(DEFAULT)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -95,7 +97,7 @@ export default function SettingsPage() {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Error al guardar')
-      toast.success('Configuración guardada')
+      toast.success(t('settings.saved'))
       setDirty(false)
     } catch (err: any) {
       toast.error(err.message)
@@ -127,8 +129,8 @@ export default function SettingsPage() {
             <Settings className="w-5 h-5 text-violet-400" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-white">Configuración</h1>
-            <p className="text-gray-400 text-sm">Horario laboral y días festivos</p>
+            <h1 className="text-2xl font-bold text-white">{t('settings.title')}</h1>
+            <p className="text-gray-400 text-sm">{t('settings.subtitle')}</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -153,7 +155,7 @@ export default function SettingsPage() {
       <div className="glass rounded-2xl p-6 space-y-4">
         <div className="flex items-center gap-2 mb-1">
           <Calendar className="w-4 h-4 text-blue-400" />
-          <h2 className="text-base font-semibold text-white">Días laborales</h2>
+          <h2 className="text-base font-semibold text-white">{t('settings.workDays')}</h2>
         </div>
         <p className="text-sm text-gray-400">Selecciona los días que se consideran hábiles para el cálculo de asistencia.</p>
 
@@ -190,13 +192,13 @@ export default function SettingsPage() {
       <div className="glass rounded-2xl p-6 space-y-5">
         <div className="flex items-center gap-2 mb-1">
           <Clock className="w-4 h-4 text-blue-400" />
-          <h2 className="text-base font-semibold text-white">Horario y tolerancia</h2>
+          <h2 className="text-base font-semibold text-white">{t('settings.workHours')}</h2>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
           {/* Hora de entrada */}
           <div>
-            <label className="block text-xs font-medium text-gray-400 mb-2">Hora de entrada</label>
+            <label className="block text-xs font-medium text-gray-400 mb-2">{t('settings.checkIn')}</label>
             <input
               type="time"
               value={config.checkInTime}
@@ -207,7 +209,7 @@ export default function SettingsPage() {
 
           {/* Hora de salida */}
           <div>
-            <label className="block text-xs font-medium text-gray-400 mb-2">Hora de salida</label>
+            <label className="block text-xs font-medium text-gray-400 mb-2">{t('settings.checkOut')}</label>
             <input
               type="time"
               value={config.checkOutTime}
@@ -263,12 +265,12 @@ export default function SettingsPage() {
 
         {/* Resumen visual */}
         <div className="bg-gray-900/60 rounded-xl p-4 border border-gray-800">
-          <p className="text-xs text-gray-400 mb-3 font-medium">Vista previa del horario</p>
+          <p className="text-xs text-gray-400 mb-3 font-medium">{t('settings.schedulePreview')}</p>
           <div className="flex items-center gap-2 text-xs overflow-x-auto pb-1">
             {/* Zona antes de entrada */}
             <div className="flex flex-col items-center gap-1 shrink-0">
               <div className="w-2 h-2 rounded-full bg-red-400" />
-              <span className="text-gray-500 whitespace-nowrap">Retardo</span>
+              <span className="text-gray-500 whitespace-nowrap">{t('settings.delay')}</span>
             </div>
             <div className="h-px bg-red-400/30 w-8 shrink-0" />
 
@@ -280,7 +282,7 @@ export default function SettingsPage() {
               <div className="px-2 py-0.5 bg-amber-400/10 border border-amber-400/20 rounded text-amber-400 whitespace-nowrap">
                 +{config.checkInTolerance} min
               </div>
-              <span className="text-gray-500">Tolerancia</span>
+              <span className="text-gray-500">{t('settings.tolerance')}</span>
             </div>
             <div className="flex-1 h-px bg-emerald-400/20 min-w-4" />
 
@@ -292,7 +294,7 @@ export default function SettingsPage() {
               <div className="px-2 py-0.5 bg-amber-400/10 border border-amber-400/20 rounded text-amber-400 whitespace-nowrap">
                 -{config.checkOutTolerance} min
               </div>
-              <span className="text-gray-500">Tolerancia</span>
+              <span className="text-gray-500">{t('settings.tolerance')}</span>
             </div>
             <div className="h-px bg-gray-700 w-8 shrink-0" />
             <div className="flex flex-col items-center gap-1 shrink-0">
@@ -307,7 +309,7 @@ export default function SettingsPage() {
       <div className="glass rounded-2xl p-6 space-y-4">
         <div className="flex items-center gap-2 mb-1">
           <Calendar className="w-4 h-4 text-amber-400" />
-          <h2 className="text-base font-semibold text-white">Días festivos</h2>
+          <h2 className="text-base font-semibold text-white">{t('settings.holidays')}</h2>
         </div>
         <p className="text-sm text-gray-400">Los días festivos no contarán como ausencias aunque el empleado no registre asistencia.</p>
 

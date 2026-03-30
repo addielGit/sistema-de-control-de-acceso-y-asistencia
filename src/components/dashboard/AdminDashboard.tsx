@@ -1,5 +1,6 @@
 // src/components/dashboard/AdminDashboard.tsx
 'use client'
+import { useI18n } from '@/lib/i18n-context'
 import { useEffect, useState } from 'react'
 import { Users, UserCheck, UserX, Clock, TrendingUp, Activity } from 'lucide-react'
 import { StatCard } from '@/components/ui/StatCard'
@@ -9,6 +10,8 @@ import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, Cell, Legend
 } from 'recharts'
+
+function useT() { const { t } = useI18n(); return t }
 
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (!active || !payload?.length) return null
@@ -23,6 +26,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 }
 
 export function AdminDashboard() {
+  const t = useT()
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -35,27 +39,27 @@ export function AdminDashboard() {
 
   if (loading) return <DashboardSkeleton />
 
-  if (!stats) return <p className="text-gray-500 text-center py-12">Error cargando datos</p>
+  if (!stats) return <p className="text-gray-500 text-center py-12">t('admin.errorLoading')</p>
 
   return (
     <div className="space-y-6 w-full">
       <div>
-        <h1 className="text-2xl font-bold text-white">Dashboard</h1>
-        <p className="text-gray-400 text-sm mt-1">Resumen de asistencia de hoy</p>
+        <h1 className="text-2xl font-bold text-white">{t('nav.dashboard')}</h1>
+        <p className="text-gray-400 text-sm mt-1">{t('admin.todaySummary')}</p>
       </div>
 
       {/* Stat cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-        <StatCard title="Total Empleados" value={stats.totalEmployees} icon={Users} iconColor="text-blue-400" subtitle="Activos en el sistema" />
+        <StatCard title={t('admin.totalEmployees')} value={stats.totalEmployees} icon={Users} iconColor="text-blue-400" subtitle={t('admin.activeSystem')} />
         <StatCard title="Presentes Hoy" value={stats.presentToday} icon={UserCheck} iconColor="text-emerald-400" trend={{ value: 5, label: 'vs ayer' }} />
-        <StatCard title="Retardos" value={stats.lateToday} icon={Clock} iconColor="text-amber-400" />
-        <StatCard title="Ausentes" value={stats.absentToday} icon={UserX} iconColor="text-red-400" />
+        <StatCard title={t('admin.late')} value={stats.lateToday} icon={Clock} iconColor="text-amber-400" />
+        <StatCard title={t('admin.absent')} value={stats.absentToday} icon={UserX} iconColor="text-red-400" />
       </div>
 
       {/* Attendance rate */}
       <div className="glass rounded-2xl p-5">
         <div className="flex items-center justify-between mb-3">
-          <p className="text-sm font-medium text-gray-300">Tasa de Asistencia Global</p>
+          <p className="text-sm font-medium text-gray-300">{t('admin.attendanceRate')}</p>
           <span className="text-2xl font-bold text-white">{stats.attendanceRate}%</span>
         </div>
         <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
@@ -72,7 +76,7 @@ export function AdminDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Weekly chart */}
         <div className="glass rounded-2xl p-5">
-          <h3 className="text-sm font-semibold text-white mb-5">Asistencia Semanal</h3>
+          <h3 className="text-sm font-semibold text-white mb-5">{t('admin.weeklyChart')}</h3>
           <ResponsiveContainer width="100%" height={220}>
             <AreaChart data={stats.weeklyData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
               <defs>
@@ -90,15 +94,15 @@ export function AdminDashboard() {
               <YAxis stroke="#6b7280" tick={{ fontSize: 11 }} />
               <Tooltip content={<CustomTooltip />} />
               <Legend wrapperStyle={{ fontSize: '11px', color: '#9ca3af' }} />
-              <Area type="monotone" dataKey="present" name="Presentes" stroke="#34d399" fill="url(#gPresent)" strokeWidth={2} />
-              <Area type="monotone" dataKey="late" name="Retardos" stroke="#fbbf24" fill="url(#gLate)" strokeWidth={2} />
+              <Area type="monotone" dataKey="present" name={t('admin.present')} stroke="#34d399" fill="url(#gPresent)" strokeWidth={2} />
+              <Area type="monotone" dataKey="late" name={t('admin.late')} stroke="#fbbf24" fill="url(#gLate)" strokeWidth={2} />
             </AreaChart>
           </ResponsiveContainer>
         </div>
 
         {/* Department chart */}
         <div className="glass rounded-2xl p-5">
-          <h3 className="text-sm font-semibold text-white mb-5">Por Departamento</h3>
+          <h3 className="text-sm font-semibold text-white mb-5">{t('admin.byDepartment')}</h3>
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={stats.departmentData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
@@ -119,7 +123,7 @@ export function AdminDashboard() {
       <div className="glass rounded-2xl p-5">
         <div className="flex items-center gap-2 mb-5">
           <Activity className="w-4 h-4 text-blue-400" />
-          <h3 className="text-sm font-semibold text-white">Actividad Reciente</h3>
+          <h3 className="text-sm font-semibold text-white">{t('admin.recentActivity')}</h3>
         </div>
         <div className="space-y-3">
           {stats.recentActivity.slice(0, 8).map((log: any) => (

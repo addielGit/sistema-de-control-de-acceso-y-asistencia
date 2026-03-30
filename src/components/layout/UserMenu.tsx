@@ -1,5 +1,6 @@
 // src/components/layout/UserMenu.tsx
 'use client'
+import { useI18n } from '@/lib/i18n-context'
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useRouter } from 'next/navigation'
@@ -12,6 +13,7 @@ interface UserMenuProps {
 }
 
 export function UserMenu({ user }: UserMenuProps) {
+  const { t } = useI18n()
   const [open, setOpen]         = useState(false)
   const [mounted, setMounted]   = useState(false)
   const [menuStyle, setMenuStyle] = useState<React.CSSProperties>({})
@@ -93,15 +95,15 @@ export function UserMenu({ user }: UserMenuProps) {
       <div className="p-1.5">
         <MenuItem
           icon={User}
-          label="Mi perfil"
-          description="Editar información"
+          label={t('nav.myProfile')}
+          description={t('nav.editInfo')}
           onClick={() => { router.push('/dashboard/profile'); setOpen(false) }}
         />
         {user.role === 'ADMIN' && (
           <MenuItem
             icon={Settings}
-            label="Configuración"
-            description="Horario y festivos"
+            label={t('nav.settings')}
+            description={t('nav.scheduleHolidays')}
             onClick={() => { router.push('/dashboard/settings'); setOpen(false) }}
           />
         )}
@@ -114,7 +116,7 @@ export function UserMenu({ user }: UserMenuProps) {
           className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-red-400 hover:bg-red-500/10 transition-all group"
         >
           <LogOut className="w-4 h-4 shrink-0" />
-          <span className="font-medium">Cerrar sesión</span>
+          <span className="font-medium">{t('nav.logout')}</span>
         </button>
       </div>
     </div>

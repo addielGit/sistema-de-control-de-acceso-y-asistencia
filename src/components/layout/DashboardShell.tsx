@@ -5,6 +5,7 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { useSession, signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
+import { useI18n } from '@/lib/i18n-context'
 import { useAppStore } from '@/store/useAppStore'
 import { cn, getRoleLabel } from '@/lib/utils'
 import { format } from 'date-fns'
@@ -34,6 +35,7 @@ const NOTIF_CFG = {
 // ─── NotificationPanel ─────────────────────────────────────────────────────────
 
 function NotificationPanel() {
+  const { t } = useI18n()
   const [open, setOpen]       = useState(false)
   const [notifs, setNotifs]   = useState<Notif[]>([])
   const [unread, setUnread]   = useState(0)
@@ -140,11 +142,11 @@ function NotificationPanel() {
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-800 shrink-0">
         <div className="flex items-center gap-2">
           <h3 className="text-sm font-semibold text-white">Notificaciones</h3>
-          {unread > 0 && <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/20 text-blue-400 border border-blue-500/30">{unread} sin leer</span>}
+          {unread > 0 && <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/20 text-blue-400 border border-blue-500/30">{t('notif.unread', {n: unread})}</span>}
         </div>
         <div className="flex items-center gap-1">
           {unread > 0 && (
-            <button onClick={markAll} disabled={acting === 'all'} title="Marcar todas leídas"
+            <button onClick={markAll} disabled={acting === 'all'} title={t('action.markAllRead')}
               className="flex items-center justify-center text-gray-400 hover:text-white transition-all p-1">
               {acting === 'all' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCheck className="w-3.5 h-3.5" />}
             </button>
@@ -162,7 +164,7 @@ function NotificationPanel() {
         ) : notifs.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-8 gap-2">
             <Bell className="w-7 h-7 text-gray-700" />
-            <p className="text-xs text-gray-500">Sin notificaciones</p>
+            <p className="text-xs text-gray-500">{t('notif.none')}</p>
           </div>
         ) : (
           <div className="divide-y divide-gray-800/60">
@@ -178,9 +180,9 @@ function NotificationPanel() {
           className="flex items-center justify-center gap-2 w-full px-4 py-3 border-t border-gray-800 text-xs font-medium text-gray-400 hover:text-white hover:bg-gray-800/50 transition-all rounded-b-2xl"
         >
           {remaining > 0 ? (
-            <>Ver todas las notificaciones <span className="px-1.5 py-0.5 rounded-full bg-gray-700 text-gray-300 text-[10px] font-bold">+{remaining} más</span></>
+            <>{t('action.seeAll')} <span className="px-1.5 py-0.5 rounded-full bg-gray-700 text-gray-300 text-[10px] font-bold">{t('notif.moreItems', {n: remaining})}</span></>
           ) : (
-            <>Ver todas las notificaciones <ChevronRight className="w-3.5 h-3.5" /></>
+            <>{t('action.seeAll')} <ChevronRight className="w-3.5 h-3.5" /></>
           )}
         </button>
       )}
@@ -240,6 +242,7 @@ function NRow({ n, onRead, onDel, acting, onClose }: { n: Notif; onRead: (id: st
 // ─── UserMenu ──────────────────────────────────────────────────────────────────
 
 function UserMenu({ name, email, role, avatar }: { name: string; email: string; role: string; avatar: string | null }) {
+  const { t } = useI18n()
   const [open, setOpen]       = useState(false)
   const [mounted, setMounted] = useState(false)
   const [mStyle, setMStyle]   = useState<React.CSSProperties>({})
@@ -306,12 +309,12 @@ function UserMenu({ name, email, role, avatar }: { name: string; email: string; 
         </div>
       </div>
       <div className="p-1.5">
-        <MBtn icon={User}     label="Mi perfil"     desc="Editar información"  onClick={() => { router.push('/dashboard/profile');  setOpen(false) }} />
-        {role === 'ADMIN' && <MBtn icon={Settings} label="Configuración" desc="Horario y festivos" onClick={() => { router.push('/dashboard/settings'); setOpen(false) }} />}
+        <MBtn icon={User}     label={t('nav.myProfile')}  desc={t('nav.editInfo')}      onClick={() => { router.push('/dashboard/profile');  setOpen(false) }} />
+        {role === 'ADMIN' && <MBtn icon={Settings} label={t('nav.settings')}   desc={t('nav.scheduleHolidays')} onClick={() => { router.push('/dashboard/settings'); setOpen(false) }} />}
       </div>
       <div className="p-1.5 border-t border-gray-800">
         <button onClick={() => signOut({ callbackUrl: '/login' })} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-red-400 hover:bg-red-500/10 transition-all">
-          <LogOut className="w-4 h-4 shrink-0" /><span className="font-medium">Cerrar sesión</span>
+          <LogOut className="w-4 h-4 shrink-0" /><span className="font-medium">{t('nav.logout')}</span>
         </button>
       </div>
     </div>
@@ -352,6 +355,7 @@ function MBtn({ icon: Icon, label, desc, onClick }: { icon: React.ElementType; l
 // avatar se obtiene con un fetch local para evitar el límite de 4KB del JWT cookie
 
 function AppHeader() {
+  const { t } = useI18n()
   const { data: session } = useSession()
   const { toggleSidebar } = useAppStore()
   const [avatar, setAvatar] = useState<string | null>(null)

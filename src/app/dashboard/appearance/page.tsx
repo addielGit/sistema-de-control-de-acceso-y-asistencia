@@ -1,5 +1,6 @@
 // src/app/dashboard/appearance/page.tsx
 'use client'
+import { useI18n } from '@/lib/i18n-context'
 import { useState, useEffect } from 'react'
 import { useAppStore } from '@/store/useAppStore'
 import { PRESET_THEMES, getTheme, ThemeColors } from '@/lib/themes'
@@ -21,6 +22,7 @@ const COLOR_FIELDS: { key: keyof ThemeColors; label: string; desc: string }[] = 
 ]
 
 export default function AppearancePage() {
+  const { t } = useI18n()
   const { themeId, customColors, setThemeId, setCustomColors, resetCustomColors } = useAppStore()
   const [activeTab, setActiveTab] = useState<'presets' | 'custom'>('presets')
   const [localColors, setLocalColors] = useState<Partial<ThemeColors>>({})
@@ -39,7 +41,7 @@ export default function AppearancePage() {
   const handleReset = () => {
     resetCustomColors()
     setLocalColors({})
-    toast.success('Colores restablecidos')
+    toast.success(t('appearance.resetDone'))
   }
 
   const hasCustom = Object.keys(customColors).length > 0
@@ -55,8 +57,8 @@ export default function AppearancePage() {
           <Palette className="w-5 h-5" style={{ color: 'var(--accent-text)' }} />
         </div>
         <div>
-          <h1 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>Apariencia</h1>
-          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Personaliza los colores y el tema del sistema</p>
+          <h1 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>{t('appearance.title')}</h1>
+          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>{t('appearance.subtitle')}</p>
         </div>
       </div>
 
@@ -82,12 +84,12 @@ export default function AppearancePage() {
           <div>
             <div className="flex items-center gap-2 mb-4">
               <Moon className="w-4 h-4" style={{ color: 'var(--text-muted)' }} />
-              <h2 className="text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>Temas oscuros</h2>
+              <h2 className="text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>{t('appearance.dark')}</h2>
             </div>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
               {darkThemes.map(theme => (
                 <ThemeCard key={theme.id} theme={theme} active={themeId === theme.id}
-                  onSelect={() => { setThemeId(theme.id); toast.success(`Tema "${theme.name}" aplicado`) }} />
+                  onSelect={() => { setThemeId(theme.id); toast.success(t('appearance.applied').replace('{name}', theme.name)) }} />
               ))}
             </div>
           </div>
@@ -96,12 +98,12 @@ export default function AppearancePage() {
           <div>
             <div className="flex items-center gap-2 mb-4">
               <Sun className="w-4 h-4" style={{ color: 'var(--text-muted)' }} />
-              <h2 className="text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>Temas claros</h2>
+              <h2 className="text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>{t('appearance.light')}</h2>
             </div>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
               {lightThemes.map(theme => (
                 <ThemeCard key={theme.id} theme={theme} active={themeId === theme.id}
-                  onSelect={() => { setThemeId(theme.id); toast.success(`Tema "${theme.name}" aplicado`) }} />
+                  onSelect={() => { setThemeId(theme.id); toast.success(t('appearance.applied').replace('{name}', theme.name)) }} />
               ))}
             </div>
           </div>
@@ -191,15 +193,15 @@ export default function AppearancePage() {
 
           {/* Live preview strip */}
           <div className="rounded-2xl p-5 glass space-y-3">
-            <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Vista previa</p>
+            <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>{t('appearance.colorPreview')}</p>
             <div className="flex flex-wrap gap-2">
-              <button className="px-4 py-2 rounded-xl text-sm font-medium" style={{ backgroundColor: 'var(--accent)', color: '#fff' }}>Botón primario</button>
-              <button className="px-4 py-2 rounded-xl text-sm font-medium" style={{ backgroundColor: 'var(--bg-input)', color: 'var(--text-primary)', border: '1px solid var(--border-base)' }}>Botón secundario</button>
+              <button className="px-4 py-2 rounded-xl text-sm font-medium" style={{ backgroundColor: 'var(--accent)', color: '#fff' }}>{t('appearance.primaryBtn')}</button>
+              <button className="px-4 py-2 rounded-xl text-sm font-medium" style={{ backgroundColor: 'var(--bg-input)', color: 'var(--text-primary)', border: '1px solid var(--border-base)' }}>{t('appearance.secondaryBtn')}</button>
               <span className="px-3 py-1.5 rounded-full text-xs font-medium" style={{ backgroundColor: 'var(--accent-muted)', color: 'var(--accent-text)', border: '1px solid var(--accent)' }}>Badge</span>
             </div>
             <div className="rounded-xl p-3" style={{ backgroundColor: 'var(--bg-input)', border: '1px solid var(--border-base)' }}>
-              <p className="text-sm" style={{ color: 'var(--text-primary)' }}>Texto principal en un input</p>
-              <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>Texto secundario</p>
+              <p className="text-sm" style={{ color: 'var(--text-primary)' }}>{t('appearance.mainText')}</p>
+              <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>{t('appearance.secondText')}</p>
             </div>
           </div>
         </div>

@@ -1,5 +1,6 @@
 // src/components/layout/NotificationPanel.tsx
 'use client'
+import { useI18n } from '@/lib/i18n-context'
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { Bell, X, Check, CheckCheck, Trash2, Loader2, Info, AlertTriangle, CheckCircle, XCircle } from 'lucide-react'
@@ -24,6 +25,7 @@ const TYPE_CONFIG = {
 }
 
 export function NotificationPanel() {
+  const { t } = useI18n()
   const [open, setOpen]                       = useState(false)
   const [notifications, setNotifications]     = useState<Notification[]>([])
   const [unreadCount, setUnreadCount]         = useState(0)
@@ -185,7 +187,7 @@ export function NotificationPanel() {
             <button
               onClick={markAllRead}
               disabled={acting === 'all'}
-              title="Marcar todas como leídas"
+              title={t('action.markAllRead')}
               className="flex items-center justify-center text-gray-400 hover:text-white transition-all p-1"
             >
               {acting === 'all'
@@ -225,7 +227,7 @@ export function NotificationPanel() {
             <div className="w-12 h-12 rounded-2xl bg-gray-800 flex items-center justify-center">
               <Bell className="w-5 h-5 text-gray-600" />
             </div>
-            <p className="text-sm text-gray-500">Sin notificaciones</p>
+            <p className="text-sm text-gray-500">{t('notif.none')}</p>
           </div>
         ) : (
           <div className="py-2">

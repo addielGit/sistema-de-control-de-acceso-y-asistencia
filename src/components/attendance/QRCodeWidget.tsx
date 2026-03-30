@@ -1,5 +1,6 @@
 // src/components/attendance/QRCodeWidget.tsx
 'use client'
+import { useI18n } from '@/lib/i18n-context'
 import { useEffect, useState } from 'react'
 import QRCode from 'react-qr-code'
 import { QrCode, RefreshCw } from 'lucide-react'
@@ -10,6 +11,7 @@ interface QRCodeWidgetProps {
 }
 
 export function QRCodeWidget({ userId, userName }: QRCodeWidgetProps) {
+  const { t } = useI18n()
   const [qrValue, setQrValue] = useState('')
   const [expires, setExpires] = useState(0)
 
@@ -42,8 +44,8 @@ export function QRCodeWidget({ userId, userName }: QRCodeWidgetProps) {
           <QrCode className="w-5 h-5 text-violet-400" />
         </div>
         <div>
-          <h3 className="text-sm font-semibold text-white">Mi Código QR</h3>
-          <p className="text-xs text-gray-500">Para registro de acceso</p>
+          <h3 className="text-sm font-semibold text-white">{t('qr.title')}</h3>
+          <p className="text-xs text-gray-500">{t('qr.subtitle')}</p>
         </div>
       </div>
 
@@ -58,7 +60,7 @@ export function QRCodeWidget({ userId, userName }: QRCodeWidgetProps) {
       {/* Expiry countdown */}
       <div>
         <div className="flex items-center justify-between mb-1.5">
-          <p className="text-xs text-gray-500">Expira en</p>
+          <p className="text-xs text-gray-500">{t('qr.expires')}</p>
           <p className="text-xs font-mono text-gray-300">{String(mins).padStart(2,'0')}:{String(secs).padStart(2,'0')}</p>
         </div>
         <div className="h-1.5 bg-gray-800 rounded-full overflow-hidden">

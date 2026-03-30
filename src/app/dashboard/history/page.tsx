@@ -1,5 +1,6 @@
 // src/app/dashboard/history/page.tsx
 'use client'
+import { useI18n } from '@/lib/i18n-context'
 import { useEffect, useState, useCallback } from 'react'
 import { DataTable } from '@/components/ui/DataTable'
 import { StatusBadge } from '@/components/ui/Badge'
@@ -17,6 +18,7 @@ const STATUS_OPTIONS = [
 ]
 
 export default function HistoryPage() {
+  const { t } = useI18n()
   const { data: session } = useSession()
   const isAdmin = session?.user?.role === 'ADMIN'
 
@@ -120,7 +122,7 @@ export default function HistoryPage() {
     <div className="space-y-6 w-full">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Historial de Asistencia</h1>
+          <h1 className="text-2xl font-bold text-white">{t('history.title')}</h1>
           <p className="text-gray-400 text-sm mt-1">{total} registros encontrados</p>
         </div>
         {isAdmin && (
@@ -172,7 +174,7 @@ export default function HistoryPage() {
         page={page}
         limit={15}
         onPageChange={setPage}
-        emptyMessage="No hay registros de asistencia para los filtros seleccionados"
+        emptyMessage={t("history.noRecords")}
       />
     </div>
   )

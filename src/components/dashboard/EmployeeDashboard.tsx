@@ -13,6 +13,7 @@ import {
   Send,
 } from "lucide-react";
 import toast from "react-hot-toast";
+import { useI18n } from "@/lib/i18n-context";
 import { formatTime, formatDate, cn } from "@/lib/utils";
 import { StatusBadge } from "@/components/ui/Badge";
 import { AttendanceStatus } from "@prisma/client";
@@ -36,6 +37,7 @@ interface Schedule {
 }
 
 export function EmployeeDashboard({ userId }: { userId: string }) {
+  const { t, locale } = useI18n();
   const [today, setToday] = useState<TodayRecord | null>(null);
   const [schedule, setSchedule] = useState<Schedule | null>(null);
   const [loading, setLoading] = useState(true);
@@ -173,7 +175,6 @@ export function EmployeeDashboard({ userId }: { userId: string }) {
   return (
     <div className="space-y-6 w-full max-w-2xl">
       <div>
-        <h1 className="text-2xl font-bold text-white">Mi Asistencia</h1>
         <p className="text-gray-400 text-sm mt-1 capitalize">
           {formatDate(now, "EEEE, d 'de' MMMM yyyy")}
         </p>
@@ -196,21 +197,21 @@ export function EmployeeDashboard({ userId }: { userId: string }) {
             {!checkedIn && (
               <span className="flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                Entrada hasta{" "}
-                {new Date(schedule.checkInDeadline).toLocaleTimeString("es", {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
+                {t("attendance.entryUntil")}{" "}
+                {new Date(schedule.checkInDeadline).toLocaleTimeString(
+                  locale === "es" ? "es" : "en",
+                  { hour: "2-digit", minute: "2-digit" },
+                )}
               </span>
             )}
             {checkedIn && !checkedOut && (
               <span className="flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-orange-400" />
-                Salida desde{" "}
-                {new Date(schedule.checkOutStart).toLocaleTimeString("es", {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
+                {t("attendance.exitFrom")}{" "}
+                {new Date(schedule.checkOutStart).toLocaleTimeString(
+                  locale === "es" ? "es" : "en",
+                  { hour: "2-digit", minute: "2-digit" },
+                )}
               </span>
             )}
           </div>
@@ -308,7 +309,13 @@ export function EmployeeDashboard({ userId }: { userId: string }) {
                       : "border-gray-700 text-gray-500 hover:border-gray-600",
                   )}
                 >
-                  {t === "ENTRY" ? "→ Entrada" : "← Salida"}
+                  {t === "ENTRY"
+                    ? locale === "es"
+                      ? "→ Entrada"
+                      : "→ Entry"
+                    : locale === "es"
+                      ? "← Salida"
+                      : "← Exit"}
                 </button>
               ))}
             </div>
@@ -357,7 +364,7 @@ export function EmployeeDashboard({ userId }: { userId: string }) {
         <div className="grid grid-cols-3 gap-4">
           {[
             {
-              label: "Estado",
+              label: t("label.status"),
               value: today ? (
                 <StatusBadge status={today.status} />
               ) : (
@@ -365,13 +372,13 @@ export function EmployeeDashboard({ userId }: { userId: string }) {
               ),
             },
             {
-              label: "Entrada",
+              label: t("label.entry"),
               value: today?.checkIn
                 ? formatTime(new Date(today.checkIn))
                 : "--:--",
             },
             {
-              label: "Salida",
+              label: t("label.exit"),
               value: today?.checkOut
                 ? formatTime(new Date(today.checkOut))
                 : "--:--",
@@ -405,27 +412,27 @@ export function EmployeeDashboard({ userId }: { userId: string }) {
           <div className="grid grid-cols-2 gap-3 text-center">
             {[
               {
-                label: "Entrada programada",
+                label: t("attendance.scheduledEntry"),
                 value: schedule.checkInTime,
                 color: "text-emerald-400",
               },
               {
-                label: "Salida programada",
+                label: t("attendance.scheduledExit"),
                 value: schedule.checkOutTime,
                 color: "text-orange-400",
               },
               {
-                label: "Límite de entrada",
+                label: t("attendance.entryDeadline"),
                 value: new Date(schedule.checkInDeadline).toLocaleTimeString(
-                  "es",
+                  locale === "es" ? "es" : "en",
                   { hour: "2-digit", minute: "2-digit" },
                 ),
                 color: "text-amber-400",
               },
               {
-                label: "Salida mínima",
+                label: t("attendance.minExit"),
                 value: new Date(schedule.checkOutStart).toLocaleTimeString(
-                  "es",
+                  locale === "es" ? "es" : "en",
                   { hour: "2-digit", minute: "2-digit" },
                 ),
                 color: "text-blue-400",

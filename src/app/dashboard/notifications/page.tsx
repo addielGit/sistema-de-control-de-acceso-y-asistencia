@@ -1,5 +1,6 @@
 // src/app/dashboard/notifications/page.tsx
 'use client'
+import { useI18n } from '@/lib/i18n-context'
 import { useEffect, useState, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import {
@@ -38,6 +39,7 @@ const FILTER_OPTS: { value: FilterType; label: string }[] = [
 ]
 
 export default function NotificationsPage() {
+  const { t } = useI18n()
   const { data: session } = useSession()
   const isAdmin = (session?.user as any)?.role === 'ADMIN'
 
@@ -133,7 +135,7 @@ export default function NotificationsPage() {
       {/* Header */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>Notificaciones</h1>
+          <h1 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>{t('notif.title')}</h1>
           <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
             {unread > 0 ? <>{unread} sin leer · </> : null}{total} en total
           </p>
