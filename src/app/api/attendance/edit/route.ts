@@ -66,6 +66,9 @@ export async function PATCH(req: NextRequest) {
   if (checkOut !== undefined) updateData.checkOut = finalOut
   if (status   !== undefined) updateData.status   = status
   if (notes    !== undefined) updateData.notes    = notes || null
+  // Tag as admin edit
+  updateData.source   = 'EDIT'
+  updateData.markedBy = session.user.name ?? 'Admin'
 
   const updated = await prisma.attendance.update({
     where: { id },

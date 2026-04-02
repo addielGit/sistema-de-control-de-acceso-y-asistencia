@@ -88,7 +88,15 @@ export async function POST(req: NextRequest) {
 
     const attendance = await prisma.attendance.update({
       where: { id: existing!.id },
-      data:  { checkOut: now, notes: existing?.notes ?? reason },
+      data:  {
+        checkOut: now,
+        notes:    existing?.notes ?? reason ?? null,
+        // Preserve existing source if already admin-marked; only overwrite on new admin action
+        ...(isAdminOverride && {
+          source:   'ADMIN',
+          markedBy: session.user.name ?? 'Admin',
+        }),
+      },
     })
 
     await prisma.accessLog.create({ data: { userId, action: 'EXIT', method, ipAddress, location } })
@@ -131,10 +139,18 @@ export async function POST(req: NextRequest) {
     const attendance = existing
       ? await prisma.attendance.update({
           where: { id: existing.id },
-          data:  { checkIn: now, status, lateMinutes, notes: reason },
+          data:  {
+            checkIn: now, status, lateMinutes, notes: reason ?? null,
+            source:   isAdminOverride ? 'ADMIN' : 'USER',
+            markedBy: isAdminOverride ? (session.user.name ?? 'Admin') : null,
+          },
         })
       : await prisma.attendance.create({
-          data: { userId, date: dateKey, checkIn: now, status, lateMinutes, notes: reason },
+          data: {
+            userId, date: dateKey, checkIn: now, status, lateMinutes, notes: reason ?? null,
+            source:   isAdminOverride ? 'ADMIN' : 'USER',
+            markedBy: isAdminOverride ? (session.user.name ?? 'Admin') : null,
+          },
         })
 
     await prisma.accessLog.create({ data: { userId, action: 'ENTRY', method, ipAddress, location } })
